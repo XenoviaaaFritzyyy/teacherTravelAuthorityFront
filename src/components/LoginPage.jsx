@@ -1,0 +1,102 @@
+"use client"
+
+import { useState } from "react"
+import { Link } from "react-router-dom"
+import "./LoginPage.css"
+
+const LoginPage = () => {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  })
+
+  const [errors, setErrors] = useState({})
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData({
+      ...formData,
+      [name]: value,
+    })
+  }
+
+  const validateForm = () => {
+    const tempErrors = {}
+
+    if (!formData.email) {
+      tempErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      tempErrors.email = "Email is invalid"
+    }
+
+    if (!formData.password) {
+      tempErrors.password = "Password is required"
+    }
+
+    setErrors(tempErrors)
+    return Object.keys(tempErrors).length === 0
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    if (validateForm()) {
+      console.log("Form submitted:", formData)
+    }
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-container">
+        <div className="logo-section">
+          <img
+            src="/placeholder.svg?height=200&width=200"
+            alt="Department of Education Division of Cebu Province"
+            className="doe-logo"
+          />
+        </div>
+
+        <div className="login-form-section">
+          <h1 className="login-title">LOGIN</h1>
+
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? "error" : ""}
+              />
+              {errors.email && <span className="error-message">{errors.email}</span>}
+            </div>
+
+            <div className="form-group">
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                className={errors.password ? "error" : ""}
+              />
+              {errors.password && <span className="error-message">{errors.password}</span>}
+            </div>
+
+            <button type="submit" className="login-button">
+              LOGIN
+            </button>
+          </form>
+
+          <div className="create-account-link">
+            Don't have account yet? <Link to="/signup">Create account</Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default LoginPage
+
