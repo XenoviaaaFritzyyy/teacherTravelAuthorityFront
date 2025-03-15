@@ -1,10 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { useUser } from "../context/UserContext"
 import "./LoginPage.css"
 
 const LoginPage = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useUser()
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -41,7 +46,33 @@ const LoginPage = () => {
     e.preventDefault()
 
     if (validateForm()) {
-      console.log("Form submitted:", formData)
+      // For demo purposes, we'll create a mock user
+      const userData = {
+        id: "1",
+        email: formData.email,
+        // In a real app, you would never store the password in the client
+        firstName: "",
+        lastName: "",
+        username: "",
+        mobileNumber: "",
+        employeeNumber: "",
+        schoolId: "",
+        schoolName: "",
+        district: "",
+        position: "",
+      }
+
+      // Login the user
+      const { isComplete, firstLogin } = login(userData)
+
+      // Redirect based on profile completion
+      if (!isComplete || firstLogin) {
+        navigate("/profile", {
+          state: { message: "Please complete your profile information." },
+        })
+      } else {
+        navigate("/dashboard")
+      }
     }
   }
 
