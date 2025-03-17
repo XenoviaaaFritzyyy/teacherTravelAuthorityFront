@@ -1,13 +1,15 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import { UserProvider } from "./context/UserContext"
-import LandingPage from "./components/LandingPage"
-import SignUpPage from "./components/SignUpPage"
-import LoginPage from "./components/LoginPage"
-import DashboardPage from "./components/DashboardPage"
-import ProfilePage from "./components/ProfilePage"
-import NotificationsPage from "./components/NotificationsPage"
-import ProtectedRoute from "./components/ProtectedRoute"
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import "./App.css"
+import AdminDashboard from "./components/AOadminDashboard"
+import DashboardPage from "./components/DashboardPage"
+import LandingPage from "./components/LandingPage"
+import LoginPage from "./components/LoginPage"
+import NotificationsPage from "./components/NotificationsPage"
+import ProfilePage from "./components/ProfilePage"
+import ProtectedRoute from "./components/ProtectedRoute"
+import SignUpPage from "./components/SignUpPage"
+import SuperAdminDashboard from "./components/SuperAdminDashboard"
+import { UserProvider } from "./context/UserContext"
 
 function App() {
   return (
@@ -41,6 +43,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/superadmin" element={<SuperAdminDashboard />} />
         </Routes>
       </Router>
     </UserProvider>

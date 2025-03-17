@@ -1,8 +1,8 @@
 "use client"
 
+import { Bell, Home, User } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Bell, User, Home } from "lucide-react"
 import { useUser } from "../context/UserContext"
 import "./Navbar.css"
 
@@ -45,7 +45,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/dashboard" className="logo">
-          <img src="/placeholder.svg?height=40&width=100" alt="DepEd Logo" className="deped-logo" />
+          <img src="/depedLogonav.png?height=40&width=100" alt="DepEd Logo" className="deped-logo" />
         </Link>
 
         <div className="nav-actions">

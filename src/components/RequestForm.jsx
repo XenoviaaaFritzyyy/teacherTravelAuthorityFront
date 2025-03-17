@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import "./RequestForm.css"
 
 const RequestForm = () => {
   const [formData, setFormData] = useState({
     purpose: "",
-    date: "",
+    startDate: "",
+    endDate: "",
     leeway: "1", // Default to 1 day
   })
 
@@ -29,6 +30,14 @@ const RequestForm = () => {
       ...prevState,
       [name]: value,
     }))
+
+    // Clear any existing errors for this field
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }))
+    }
   }
 
   const validateForm = () => {
@@ -38,8 +47,14 @@ const RequestForm = () => {
       tempErrors.purpose = "Purpose is required"
     }
 
-    if (!formData.date) {
-      tempErrors.date = "Date is required"
+    if (!formData.startDate) {
+      tempErrors.startDate = "Start date is required"
+    }
+
+    if (!formData.endDate) {
+      tempErrors.endDate = "End date is required"
+    } else if (formData.startDate && formData.endDate < formData.startDate) {
+      tempErrors.endDate = "End date cannot be before start date"
     }
 
     setErrors(tempErrors)
@@ -61,7 +76,8 @@ const RequestForm = () => {
         setShowSuccess(false)
         setFormData({
           purpose: "",
-          date: "",
+          startDate: "",
+          endDate: "",
           leeway: formData.leeway, // Keep the leeway selection
         })
       }, 3000)
@@ -77,29 +93,47 @@ const RequestForm = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
+            <label htmlFor="purpose">Purpose:</label>
             <input
               type="text"
+              id="purpose"
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              placeholder="Purpose"
+              placeholder="Enter the purpose of your travel"
               className={errors.purpose ? "error" : ""}
             />
             {errors.purpose && <span className="error-message">{errors.purpose}</span>}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="date">Travel Date:</label>
-            <input
-              type="date"
-              id="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              min={minDate}
-              className={errors.date ? "error" : ""}
-            />
-            {errors.date && <span className="error-message">{errors.date}</span>}
+          <div className="date-container">
+            <div className="form-group">
+              <label htmlFor="startDate">Start Date:</label>
+              <input
+                type="date"
+                id="startDate"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+                min={minDate}
+                className={errors.startDate ? "error" : ""}
+              />
+              {errors.startDate && <span className="error-message">{errors.startDate}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="endDate">End Date:</label>
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+                min={formData.startDate || minDate}
+                className={errors.endDate ? "error" : ""}
+              />
+              {errors.endDate && <span className="error-message">{errors.endDate}</span>}
+            </div>
           </div>
 
           <div className="form-group">
