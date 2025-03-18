@@ -12,100 +12,137 @@ export const useUser = () => useContext(UserContext)
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [isProfileComplete, setIsProfileComplete] = useState(false)
-  const [isFirstLogin, setIsFirstLogin] = useState(false)
 
-  // Check if user is logged in and if profile is complete
+  // Check if user is logged in and fetch profile data
   useEffect(() => {
-    // In a real app, you would fetch this from your backend or localStorage
-    const checkUserStatus = () => {
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('accessToken')
+      if (!token) return
 
-        // Check if profile is complete
-        const isComplete = checkProfileCompletion(parsedUser)
-        setIsProfileComplete(isComplete)
+      try {
+        const response = await fetch('http://localhost:3000/users/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
 
-        // Check if this is first login
-        setIsFirstLogin(parsedUser.firstLogin || false)
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+          setIsProfileComplete(checkProfileCompletion(userData))
+        } else {
+          // If token is invalid, clear it
+          localStorage.removeItem('accessToken')
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error)
+        localStorage.removeItem('accessToken')
+        setUser(null)
       }
     }
 
-    checkUserStatus()
+    fetchUserData()
   }, [])
 
   // Function to check if all required profile fields are filled
   const checkProfileCompletion = (userData) => {
     if (!userData) return false
+    if (userData.role !== 'Teacher') return true // Only teachers need complete profiles
 
-    const requiredPersonalFields = ["firstName", "lastName", "email", "username", "mobileNumber"]
-    const requiredProfessionalFields = ["employeeNumber", "schoolId", "schoolName", "district", "position"]
+    const requiredFields = [
+      "first_name",
+      "last_name",
+      "email",
+      "username",
+      "contact_no",
+      "employee_number",
+      "school_id",
+      "school_name",
+      "district",
+      "position"
+    ]
 
-    // Check if all required personal fields are filled
-    const personalComplete = requiredPersonalFields.every((field) => userData[field] && userData[field].trim() !== "")
-
-    // Check if all required professional fields are filled
-    const professionalComplete = requiredProfessionalFields.every(
-      (field) => userData[field] && userData[field].trim() !== "",
-    )
-
-    return personalComplete && professionalComplete
+    return requiredFields.every(field => userData[field] && userData[field].trim() !== "")
   }
 
   // Function to update user data
-  const updateUser = (userData) => {
-    setUser(userData)
-    localStorage.setItem("user", JSON.stringify(userData))
+  const updateUser = async (userData) => {
+    const token = localStorage.getItem('accessToken')
+    if (!token || !user?.id) return
 
-    // Check if profile is now complete
-    const isComplete = checkProfileCompletion(userData)
-    setIsProfileComplete(isComplete)
+    try {
+      const response = await fetch(`http://localhost:3000/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      })
 
-    // If this was first login, update that status
-    if (isFirstLogin && isComplete) {
-      const updatedUser = { ...userData, firstLogin: false }
-      setUser(updatedUser)
-      localStorage.setItem("user", JSON.stringify(updatedUser))
-      setIsFirstLogin(false)
+      if (response.ok) {
+        const updatedUser = await response.json()
+        setUser(updatedUser)
+        setIsProfileComplete(checkProfileCompletion(updatedUser))
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Failed to update user:', error)
+      return false
     }
   }
 
   // Function to handle login
-  const login = (userData) => {
-    // In a real app, you would validate credentials with your backend
-    // For demo purposes, we'll just set the user and check if it's their first login
-    const isComplete = checkProfileCompletion(userData)
+  const login = async (credentials) => {
+    try {
+      const response = await fetch('http://localhost:3000/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials)
+      })
 
-    // If this is a new user or profile is incomplete, mark as first login
-    const firstLogin = !isComplete
+      if (response.ok) {
+        const { accessToken } = await response.json()
+        localStorage.setItem('accessToken', accessToken)
 
-    const user = {
-      ...userData,
-      firstLogin,
+        // Fetch user data
+        const userResponse = await fetch('http://localhost:3000/users/me', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          setUser(userData)
+          const isComplete = checkProfileCompletion(userData)
+          setIsProfileComplete(isComplete)
+          return { success: true, isComplete }
+        }
+      }
+      return { success: false, error: 'Invalid credentials' }
+    } catch (error) {
+      console.error('Login failed:', error)
+      return { success: false, error: 'Network error' }
     }
-
-    setUser(user)
-    setIsProfileComplete(isComplete)
-    setIsFirstLogin(firstLogin)
-
-    localStorage.setItem("user", JSON.stringify(user))
-
-    return { isComplete, firstLogin }
   }
 
   // Function to handle logout
   const logout = () => {
     setUser(null)
     setIsProfileComplete(false)
-    setIsFirstLogin(false)
-    localStorage.removeItem("user")
+    localStorage.removeItem('accessToken')
   }
 
   const value = {
     user,
     isProfileComplete,
-    isFirstLogin,
     login,
     logout,
     updateUser,
@@ -114,4 +151,3 @@ export const UserProvider = ({ children }) => {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
 }
-

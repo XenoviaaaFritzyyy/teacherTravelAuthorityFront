@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useNavigate } from 'react-router-dom';
 import "./SignUpPage.css"
 
 const SignUpPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -15,6 +17,7 @@ const SignUpPage = () => {
   })
 
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -52,15 +55,50 @@ const SignUpPage = () => {
     return Object.keys(tempErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     if (validateForm()) {
-      // Here you would typically send the data to your backend
-      console.log("Form submitted:", formData)
-      alert("Sign up successful! (This is just a demo)")
+        setIsLoading(true);
+        try {
+            const response = await fetch('http://localhost:3000/auth/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: formData.username,
+                    password: formData.password,
+                    first_name: formData.firstName,
+                    last_name: formData.lastName,
+                    email: formData.email,
+                    role: "TEACHER",  // Make sure this matches your UserRole enum
+                    // Add default values for optional fields
+                    school_id: "",
+                    school_name: "",
+                    district: "",
+                    position: "",
+                    contact_no: "",
+                    employee_number: ""
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+              navigate('/login');
+            } else {
+                console.error('Server error:', data);
+                setErrors({ submit: data.message || 'Signup failed' });
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            setErrors({ submit: 'Network error occurred' });
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }
+};
 
   return (
     <div className="signup-page">
@@ -160,8 +198,10 @@ const SignUpPage = () => {
             </div>
           </div>
 
-          <button type="submit" className="signup-button">
-            SIGN UP
+          {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
+
+          <button type="submit" className="signup-button" disabled={isLoading}>
+            {isLoading ? "SIGNING UP..." : "SIGN UP"}
           </button>
         </form>
 
@@ -176,4 +216,3 @@ const SignUpPage = () => {
 }
 
 export default SignUpPage
-

@@ -16,6 +16,7 @@ const LoginPage = () => {
   })
 
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -42,39 +43,71 @@ const LoginPage = () => {
     return Object.keys(tempErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (validateForm()) {
-      // For demo purposes, we'll create a mock user
-      const userData = {
-        id: "1",
-        email: formData.email,
-        // In a real app, you would never store the password in the client
-        firstName: "",
-        lastName: "",
-        username: "",
-        mobileNumber: "",
-        employeeNumber: "",
-        schoolId: "",
-        schoolName: "",
-        district: "",
-        position: "",
-      }
+        setIsLoading(true)
+        try {
+            const response = await fetch('http://localhost:3000/auth/signin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                })
+            });
 
-      // Login the user
-      const { isComplete, firstLogin } = login(userData)
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('accessToken', data.accessToken);
+                
+                try {
+                    const userResponse = await fetch('http://localhost:3000/users/me', {
+                        headers: {
+                            'Authorization': `Bearer ${data.accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        login(userData);
 
-      // Redirect based on profile completion
-      if (!isComplete || firstLogin) {
-        navigate("/profile", {
-          state: { message: "Please complete your profile information." },
-        })
-      } else {
-        navigate("/dashboard")
-      }
+                        const isProfileComplete = userData.school_id && 
+                                                userData.school_name && 
+                                                userData.district && 
+                                                userData.position;
+
+                        if (!isProfileComplete) {
+                            navigate("/profile", {
+                                state: { message: "Please complete your profile information." },
+                            });
+                        } else {
+                            navigate("/dashboard");
+                        }
+                    } else {
+                        const errorData = await userResponse.json();
+                        setErrors({ submit: errorData.message || 'Failed to fetch user data' });
+                    }
+                } catch (userError) {
+                    console.error('User fetch error:', userError);
+                    setErrors({ submit: 'Failed to fetch user profile' });
+                }
+            } else {
+                const errorData = await response.json();
+                setErrors({ submit: errorData.message || 'Invalid email or password' });
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setErrors({ submit: 'Network error occurred' });
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }
+};
 
   return (
     <div className="login-page">
@@ -115,8 +148,10 @@ const LoginPage = () => {
               {errors.password && <span className="error-message">{errors.password}</span>}
             </div>
 
-            <button type="submit" className="login-button">
-              LOGIN
+            {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
+
+            <button type="submit" className="login-button" disabled={isLoading}>
+              {isLoading ? "LOGGING IN..." : "LOGIN"}
             </button>
           </form>
 
@@ -130,4 +165,3 @@ const LoginPage = () => {
 }
 
 export default LoginPage
-
