@@ -75,6 +75,13 @@
   .hero-content {
     max-width: 600px;
   }
+
+  .hero-image img {
+    width: 400px; /* Set desired width */
+    height: 500px; /* Set desired height */
+    object-fit: contain;
+}
+
   
   .hero .container {
     display: flex;
