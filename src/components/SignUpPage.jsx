@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Link } from "react-router-dom"
-import { useNavigate } from 'react-router-dom';
-import "./SignUpPage.css"
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "./SignUpPage.css";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -104,11 +103,11 @@ const SignUpPage = () => {
     <div className="signup-page">
       <div className="signup-container">
         <div className="logo-background">
-          <div className="doe-logo">
-            <span className="doe-d">D</span>
-            <span className="doe-o">O</span>
-            <span className="doe-e">E</span>
-          </div>
+        <img
+            src="/depedlogo.png?height=200&width=200"
+            alt="Department of Education Division of Cebu Province"
+            className="doe-logo"
+          />
         </div>
 
         <h1 className="signup-title">SIGN UP</h1>
