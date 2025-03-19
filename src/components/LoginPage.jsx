@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Link, useNavigate, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import "./LoginPage.css"
 
@@ -96,6 +96,10 @@ const LoginPage = () => {
                     console.error('User fetch error:', userError);
                     setErrors({ submit: 'Failed to fetch user profile' });
                 }
+            } else if (response.status === 404) {
+                setErrors({ submit: <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'red' }}>Create an account first.</span> });
+            } else if (response.status === 401) {
+                setErrors({ submit: <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'red' }}>Incorrect email or password.</span> });
             } else {
                 const errorData = await response.json();
                 setErrors({ submit: errorData.message || 'Invalid email or password' });
