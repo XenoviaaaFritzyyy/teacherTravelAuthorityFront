@@ -118,7 +118,7 @@ const LoginPage = () => {
       <div className="login-container">
         <div className="logo-section">
           <img
-            src="/placeholder.svg?height=200&width=200"
+            src="/depedlogo.png?height=200&width=200"
             alt="Department of Education Division of Cebu Province"
             className="doe-logo"
           />

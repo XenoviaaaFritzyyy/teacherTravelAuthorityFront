@@ -8,7 +8,7 @@ const LandingPage = () => {
         <div className="container">
           <nav>
             <div className="logo">
-              <span className="logo-doe">DOE</span>
+              <span className="logo-doe">DepEd</span>
               <span className="logo-text">Travel Authority</span>
             </div>
             <div className="nav-links">
@@ -37,7 +37,7 @@ const LandingPage = () => {
             </Link>
           </div>
           <div className="hero-image">
-            <img src="/placeholder.svg?height=400&width=600" alt="Teachers on educational trips" />
+            <img src="/depedlogo.png" alt="Teachers on educational trips" />
           </div>
         </div>
       </section>

@@ -267,7 +267,7 @@ const SuperAdminDashboard = () => {
     <div className="super-admin-dashboard">
       <header className="admin-header">
         <div className="logo">
-          <img src="/placeholder.svg?height=40&width=100" alt="DepEd Logo" className="deped-logo" />
+          <img src="/depedLogonav.png?height=40&width=100" alt="DepEd Logo" className="deped-logo" />
         </div>
         <div className="admin-nav">
           <button
