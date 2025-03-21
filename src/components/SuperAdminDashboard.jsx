@@ -175,7 +175,6 @@ const mockUsers = [
     email: "superadmin@deped.gov",
     position: "Super Administrator",
     contactNo: "09123456797",
-    employeeNo: "ADM002",
     role: "SuperAdmin",
   },
 ]
@@ -193,7 +192,7 @@ const SuperAdminDashboard = () => {
   const [editedUsers, setEditedUsers] = useState({})
   const [hasChanges, setHasChanges] = useState(false)
   
-  // NEW state for user search
+  // Search state for users
   const [searchQuery, setSearchQuery] = useState("")
 
   // Filter travel orders based on status
@@ -266,15 +265,11 @@ const SuperAdminDashboard = () => {
     }
   }
 
-  // Filter users by search query (username, first name, last name, email)
+  // UNIVERSAL SEARCH: convert the user object to a single string and search it
   const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase()
-    return (
-      user.username.toLowerCase().includes(query) ||
-      user.firstName.toLowerCase().includes(query) ||
-      user.lastName.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
-    )
+    const userString = Object.values(user).join(" ").toLowerCase() // all fields combined
+    return userString.includes(query)
   })
 
   return (
@@ -324,7 +319,7 @@ const SuperAdminDashboard = () => {
               <input
                 id="search"
                 type="text"
-                placeholder="Search by name, username, or email"
+                placeholder="Search for anything"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
