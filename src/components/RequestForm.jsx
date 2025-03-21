@@ -8,14 +8,13 @@ const RequestForm = () => {
     purpose: "",
     startDate: "",
     endDate: "",
-    leeway: "1", // Default to 1 day
   })
 
   const [minDate, setMinDate] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
   const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Set minimum date to today when component mounts
   useEffect(() => {
     const today = new Date()
     const year = today.getFullYear()
@@ -31,7 +30,6 @@ const RequestForm = () => {
       [name]: value,
     }))
 
-    // Clear any existing errors for this field
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -53,7 +51,7 @@ const RequestForm = () => {
 
     if (!formData.endDate) {
       tempErrors.endDate = "End date is required"
-    } else if (formData.startDate && formData.endDate < formData.startDate) {
+    } else if (formData.startDate && new Date(formData.endDate) < new Date(formData.startDate)) {
       tempErrors.endDate = "End date cannot be before start date"
     }
 
@@ -61,26 +59,52 @@ const RequestForm = () => {
     return Object.keys(tempErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (validateForm()) {
-      console.log("Form submitted:", formData)
-      // Here you would typically send the data to your backend
+      setIsSubmitting(true)
+      try {
+        const requestData = {
+          purpose: formData.purpose.trim(),
+          startDate: new Date(formData.startDate).toISOString().split('T')[0],
+          endDate: new Date(formData.endDate).toISOString().split('T')[0],
+        }
 
-      // Show success message
-      setShowSuccess(true)
-
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setShowSuccess(false)
-        setFormData({
-          purpose: "",
-          startDate: "",
-          endDate: "",
-          leeway: formData.leeway, // Keep the leeway selection
+        const response = await fetch('http://localhost:3000/travel-requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify(requestData)
         })
-      }, 3000)
+
+        if (response.ok) {
+          setShowSuccess(true)
+          setFormData({
+            purpose: "",
+            startDate: "",
+            endDate: "",
+          })
+          
+          setTimeout(() => {
+            setShowSuccess(false)
+          }, 3000)
+        } else {
+          const errorData = await response.json()
+          setErrors({ 
+            submit: errorData.message || 'Failed to submit request. Please try again.' 
+          })
+        }
+      } catch (error) {
+        console.error('Network error:', error)
+        setErrors({ 
+          submit: 'Network error occurred. Please check your connection and try again.' 
+        })
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -89,19 +113,24 @@ const RequestForm = () => {
       <div className="request-form-card">
         <h2>REQUEST FORM</h2>
 
-        {showSuccess && <div className="success-message">Your request has been submitted successfully!</div>}
+        {showSuccess && (
+          <div className="success-message">
+            Your travel request has been submitted successfully!
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="purpose">Purpose:</label>
-            <input
-              type="text"
+            <textarea
               id="purpose"
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              placeholder="Enter the purpose of your travel"
+              placeholder="Enter the detailed purpose of your travel"
               className={errors.purpose ? "error" : ""}
+              disabled={isSubmitting}
+              rows={3}
             />
             {errors.purpose && <span className="error-message">{errors.purpose}</span>}
           </div>
@@ -117,6 +146,7 @@ const RequestForm = () => {
                 onChange={handleChange}
                 min={minDate}
                 className={errors.startDate ? "error" : ""}
+                disabled={isSubmitting}
               />
               {errors.startDate && <span className="error-message">{errors.startDate}</span>}
             </div>
@@ -131,22 +161,24 @@ const RequestForm = () => {
                 onChange={handleChange}
                 min={formData.startDate || minDate}
                 className={errors.endDate ? "error" : ""}
+                disabled={isSubmitting}
               />
               {errors.endDate && <span className="error-message">{errors.endDate}</span>}
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="leeway">Leeway Days:</label>
-            <select id="leeway" name="leeway" value={formData.leeway} onChange={handleChange}>
-              <option value="1">1 Day</option>
-              <option value="3">3 Days</option>
-              <option value="5">5 Days</option>
-            </select>
-          </div>
+          {errors.submit && (
+            <div className="error-message submit-error">
+              {errors.submit}
+            </div>
+          )}
 
-          <button type="submit" className="submit-button">
-            SUBMIT
+          <button 
+            type="submit" 
+            className="submit-button"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
           </button>
         </form>
       </div>
@@ -155,4 +187,3 @@ const RequestForm = () => {
 }
 
 export default RequestForm
-
