@@ -192,13 +192,14 @@ const SuperAdminDashboard = () => {
   const [departmentFilter, setDepartmentFilter] = useState("All Departments")
   const [editedUsers, setEditedUsers] = useState({})
   const [hasChanges, setHasChanges] = useState(false)
+  
+  // NEW state for user search
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Filter travel orders based on status
   const filteredOrders = travelOrders.filter((order) => {
     return statusFilter === "all" || order.status === statusFilter
   })
-
-  
 
   const handleOrderClick = (id) => {
     if (expandedId === id) {
@@ -221,7 +222,7 @@ const SuperAdminDashboard = () => {
 
   const handleSendOrder = (id) => {
     setTravelOrders((prevOrders) =>
-      prevOrders.map((order) => (order.id === id ? { ...order, status: "approved" } : order)),
+      prevOrders.map((order) => (order.id === id ? { ...order, status: "approved" } : order))
     )
     setExpandedId(null)
   }
@@ -265,6 +266,17 @@ const SuperAdminDashboard = () => {
     }
   }
 
+  // Filter users by search query (username, first name, last name, email)
+  const filteredUsers = users.filter((user) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      user.username.toLowerCase().includes(query) ||
+      user.firstName.toLowerCase().includes(query) ||
+      user.lastName.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query)
+    )
+  })
+
   return (
     <div className="super-admin-dashboard">
       <header className="admin-header">
@@ -292,17 +304,32 @@ const SuperAdminDashboard = () => {
 
       <div className="admin-container">
         <div className="filter-container">
-          <label htmlFor="filter">Filter:</label>
-          <select
-            id="filter"
-            value={activeView === "orders" ? statusFilter : "all"}
-            onChange={activeView === "orders" ? handleStatusFilterChange : null}
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+          {activeView === "orders" ? (
+            <>
+              <label htmlFor="filter">Filter:</label>
+              <select
+                id="filter"
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </>
+          ) : (
+            <>
+              <label htmlFor="search">Search:</label>
+              <input
+                id="search"
+                type="text"
+                placeholder="Search by name, username, or email"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </>
+          )}
         </div>
 
         {activeView === "orders" ? (
@@ -381,7 +408,7 @@ const SuperAdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id}>
                       <td>{user.id}</td>
                       <td>
@@ -478,12 +505,11 @@ const SuperAdminDashboard = () => {
             </div>
 
             <div className="admin-note">
-  <p>
-    <strong>Note:</strong> If you wish to edit an information, make sure to highlight the particular data. 
-    The system is designed a certain way that information can't be easily forgotten and manipulated for security purposes.
-  </p>
-</div>
-
+              <p>
+                <strong>Note:</strong> If you wish to edit an information, make sure to highlight the particular data. 
+                The system is designed a certain way that information can't be easily forgotten and manipulated for security purposes.
+              </p>
+            </div>
 
             {hasChanges && (
               <div className="save-container">
@@ -500,4 +526,3 @@ const SuperAdminDashboard = () => {
 }
 
 export default SuperAdminDashboard
-
