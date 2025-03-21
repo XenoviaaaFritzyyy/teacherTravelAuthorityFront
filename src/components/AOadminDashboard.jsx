@@ -20,37 +20,29 @@ const AdminDashboard = () => {
   const [travelOrders, setTravelOrders] = useState([])
   const [expandedId, setExpandedId] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("pending") // default to "pending"
+  const [statusFilter, setStatusFilter] = useState("PENDING") // Changed from "pending" to "PENDING"
   const [departmentFilter, setDepartmentFilter] = useState("All Departments")
-  const [commentText, setCommentText] = useState("")
+  const [remarkText, setRemarkText] = useState("")
 
   useEffect(() => {
     const fetchTravelOrders = async () => {
       try {
-        // Updated: now using port 3000 instead of 3306
         const res = await axios.get("http://localhost:3000/travel-requests")
 
         console.log("Travel requests data:", res.data)
 
         // Transform the data to fit your display needs
         const formatted = res.data.map((order) => ({
-          // Basic fields
           id: order.id,
           purpose: order.purpose || "",
           status: order.status || "pending",
-          comment: order.remarks || "",
-          leeway: "1", // Hard-coded for demonstration
-
-          // Start/End date
+          validationStatus: order.validationStatus || "PENDING", // Add this line
+          remarks: order.remarks || "",
           startDate: order.startDate ? order.startDate.slice(0, 10) : "",
           endDate: order.endDate ? order.endDate.slice(0, 10) : "",
-
-          // Fallback to userID if user object doesn't exist
           teacherName: order.user
             ? `${order.user.last_name}, ${order.user.first_name}`
             : `UserID #${order.userID || "Unknown"}`,
-
-          // Department also depends on user object
           department: order.user?.department || "Unknown",
         }))
 
@@ -63,53 +55,50 @@ const AdminDashboard = () => {
     fetchTravelOrders()
   }, [])
 
-  // Filter logic for search, status, department
   const filteredOrders = travelOrders.filter((order) => {
     const matchesSearch =
       order.teacherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.id.toString().includes(searchTerm)
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter
+      order.id.toString().includes(searchTerm);
+    const matchesStatus = 
+      statusFilter === "all" || 
+      order.validationStatus === statusFilter; // Removed toUpperCase()
     const matchesDepartment =
-      departmentFilter === "All Departments" || order.department === departmentFilter
+      departmentFilter === "All Departments" || 
+      order.department === departmentFilter;
 
-    return matchesSearch && matchesStatus && matchesDepartment
-  })
+    return matchesSearch && matchesStatus && matchesDepartment;
+  });
 
-  // Expand/Collapse the detail view
   const handleOrderClick = (id) => {
     if (expandedId === id) {
       setExpandedId(null)
+      setRemarkText("") // Clear remark text when closing
     } else {
       setExpandedId(id)
       const order = travelOrders.find((o) => o.id === id)
-      // Populate comment box with the existing remarks
-      setCommentText(order?.comment || "")
-      // Show department of the selected order in the dropdown
+      setRemarkText(order?.remarks || "") // Changed from remark to remarks
       setDepartmentFilter(order?.department || "All Departments")
     }
   }
 
-  // Handlers for input changes
-  const handleCommentChange = (e) => setCommentText(e.target.value)
+  const handleRemarkChange = (e) => setRemarkText(e.target.value)
   const handleDepartmentChange = (e) => setDepartmentFilter(e.target.value)
   const handleStatusChange = (e) => setStatusFilter(e.target.value)
   const handleSearchChange = (e) => setSearchTerm(e.target.value)
 
-  // Accept/Reject travel request
   const handleAccept = async (id) => {
     try {
       await axios.patch(`http://localhost:3000/travel-requests/${id}/status`, {
         status: "accepted",
       })
       await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
-        remarks: commentText,
+        remarks: remarkText,
       })
 
-      // Update state so UI reflects the new status/comment
       setTravelOrders((prevOrders) =>
         prevOrders.map((order) =>
           order.id === id
-            ? { ...order, status: "accepted", comment: commentText }
+            ? { ...order, status: "accepted", remark: remarkText }
             : order
         )
       )
@@ -121,35 +110,105 @@ const AdminDashboard = () => {
 
   const handleReject = async (id) => {
     try {
-      await axios.patch(`http://localhost:3000/travel-requests/${id}/status`, {
-        status: "rejected",
-      })
-      await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
-        remarks: commentText,
-      })
+      // Update the validation status to REJECTED
+      await axios.patch(`http://localhost:3000/travel-requests/${id}/validate`, {
+        validationStatus: 'REJECTED'
+      });
 
-      // Update state so UI reflects the new status/comment
-      setTravelOrders((prevOrders) =>
-        prevOrders.map((order) =>
+      // Add remarks if any
+      if (remarkText.trim()) {
+        await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
+          remarks: remarkText
+        });
+      }
+
+      // Update local state - update validationStatus, not status
+      setTravelOrders(prevOrders =>
+        prevOrders.map(order =>
           order.id === id
-            ? { ...order, status: "rejected", comment: commentText }
+            ? { 
+                ...order, 
+                validationStatus: 'REJECTED',
+                remarks: remarkText || order.remarks 
+              }
             : order
         )
-      )
-      setExpandedId(null)
+      );
+      setExpandedId(null);
+      alert('Travel request rejected successfully!');
     } catch (error) {
-      console.error("Failed to reject travel request:", error)
+      console.error('Failed to reject travel request:', error);
+      alert('Failed to reject travel request. Please try again.');
     }
   }
 
-  // Display a title based on the current filter
+  const handleSubmitRemark = async (id) => {
+    try {
+      if (!remarkText.trim()) {
+        alert('Please enter a remark before submitting.');
+        return;
+      }
+
+      await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
+        remarks: remarkText
+      });
+
+      // Update the local state to match the backend structure
+      setTravelOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id
+            ? { ...order, remarks: remarkText } // Changed from remark to remarks
+            : order
+        )
+      );
+      alert('Remark submitted successfully!');
+    } catch (error) {
+      console.error('Failed to submit remark:', error);
+      alert('Failed to submit remark. Please try again.');
+    }
+  }
+
+  const handleValidate = async (id) => {
+    try {
+      // Update the validation status
+      await axios.patch(`http://localhost:3000/travel-requests/${id}/validate`, {
+        validationStatus: 'VALIDATED'
+      });
+
+      // Add remarks if any
+      if (remarkText.trim()) {
+        await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
+          remarks: remarkText
+        });
+      }
+
+      // Update local state - update validationStatus, not status
+      setTravelOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id
+            ? { 
+                ...order, 
+                validationStatus: 'VALIDATED',
+                remarks: remarkText || order.remarks 
+              }
+            : order
+        )
+      );
+      setExpandedId(null);
+      alert('Travel request validated successfully!');
+    } catch (error) {
+      console.error('Failed to validate travel request:', error);
+      alert('Failed to validate travel request. Please try again.');
+    }
+  }
+
   const getStatusTitle = () => {
     switch (statusFilter) {
-      case "pending":
+      case "PENDING":
         return "PENDING"
-      case "accepted":
-        return "ACCEPTED"
-      case "rejected":
+      case "VALIDATED":
+        return "VALIDATED"
+      case "REJECTED":
         return "REJECTED"
       default:
         return "ALL TRAVEL ORDERS"
@@ -158,7 +217,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      {/* Header */}
       <header className="admin-header">
         <div className="logo">
           <img
@@ -174,9 +232,7 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* Main Container */}
       <div className="admin-container">
-        {/* Search & Filter */}
         <div className="search-filter-container">
           <div className="search-container">
             <label htmlFor="search">Search:</label>
@@ -193,14 +249,13 @@ const AdminDashboard = () => {
             <label htmlFor="statusFilter">Filter:</label>
             <select id="statusFilter" value={statusFilter} onChange={handleStatusChange}>
               <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="rejected">Rejected</option>
+              <option value="PENDING">Pending</option>
+              <option value="VALIDATED">Validated</option>
+              <option value="REJECTED">Rejected</option>
             </select>
           </div>
         </div>
 
-        {/* Travel Orders List */}
         <div className="orders-container">
           <h2>{getStatusTitle()}</h2>
           <div className="orders-list">
@@ -210,7 +265,7 @@ const AdminDashboard = () => {
                   key={order.id}
                   className={`order-item ${
                     expandedId === order.id ? "expanded" : ""
-                  } ${order.status}`}
+                  } ${order.validationStatus.toLowerCase()}`}
                   onClick={() => handleOrderClick(order.id)}
                 >
                   <div className="order-header">
@@ -220,7 +275,6 @@ const AdminDashboard = () => {
                     </span>
                   </div>
 
-                  {/* Expanded details */}
                   {expandedId === order.id && (
                     <div className="order-details">
                       <div className="detail-row">
@@ -244,44 +298,51 @@ const AdminDashboard = () => {
                         <p>{order.purpose}</p>
                       </div>
 
-                      <div className="detail-row">
-                        <label>Leeway:</label>
-                        <p>
-                          {order.leeway} {order.leeway === "1" ? "day" : "days"}
-                        </p>
-                      </div>
-
-                      <div className="comment-section">
-                        <label htmlFor={`comment-${order.id}`}>Comment:</label>
+                      <div className="remark-section">
+                        <label htmlFor={`remark-${order.id}`}>Remark:</label>
+                        {order.remarks && ( // Add this to show existing remarks
+                          <p className="existing-remarks">{order.remarks}</p>
+                        )}
                         <textarea
-                          id={`comment-${order.id}`}
-                          value={commentText}
-                          onChange={handleCommentChange}
-                          placeholder="Add your comment here..."
+                          id={`remark-${order.id}`}
+                          value={remarkText}
+                          onChange={handleRemarkChange}
+                          placeholder="Add your remark here..."
                           onClick={(e) => e.stopPropagation()}
                         />
+                        <button
+                          className="submit-remark-button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSubmitRemark(order.id)
+                          }}
+                        >
+                          Submit Remark
+                        </button>
                       </div>
 
-                      <div className="action-buttons">
-                        <button
-                          className="accept-button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAccept(order.id)
-                          }}
-                        >
-                          ACCEPT
-                        </button>
-                        <button
-                          className="reject-button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleReject(order.id)
-                          }}
-                        >
-                          REJECT
-                        </button>
-                      </div>
+                      {order.validationStatus === 'PENDING' && (
+                        <div className="action-buttons">
+                          <button
+                            className="validate-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleValidate(order.id);
+                            }}
+                          >
+                            VALIDATE
+                          </button>
+                          <button
+                            className="reject-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(order.id);
+                            }}
+                          >
+                            REJECT
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
