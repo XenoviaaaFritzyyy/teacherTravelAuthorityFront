@@ -475,6 +475,14 @@ const SuperAdminDashboard = () => {
               </table>
             </div>
 
+            <div className="admin-note">
+  <p>
+    <strong>Note:</strong> If you wish to edit an information, make sure to highlight the particular data. 
+    The system is designed a certain way that information can't be easily forgotten and manipulated for security purposes.
+  </p>
+</div>
+
+
             {hasChanges && (
               <div className="save-container">
                 <button className="save-button" onClick={handleSaveChanges}>

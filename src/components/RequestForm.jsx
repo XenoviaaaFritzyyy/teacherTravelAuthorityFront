@@ -127,7 +127,7 @@ const RequestForm = () => {
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              placeholder="Enter the detailed purpose of your travel"
+              placeholder=" Enter the detailed purpose of your travel"
               className={errors.purpose ? "error" : ""}
               disabled={isSubmitting}
               rows={3}

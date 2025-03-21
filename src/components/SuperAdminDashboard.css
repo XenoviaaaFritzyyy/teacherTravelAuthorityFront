@@ -182,11 +182,13 @@
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: auto;
   }
   
   .users-table-wrapper {
     overflow-x: auto;
     margin-bottom: 20px;
+    max-width: 100%;
   }
   
   .users-table {
@@ -197,9 +199,10 @@
   
   .users-table th,
   .users-table td {
-    padding: 10px;
+    padding: 12px;
+    border: 1px solid #ccc;
     text-align: left;
-    border: 1px solid #ddd;
+    min-width: 150px;
   }
   
   .users-table th {
@@ -216,10 +219,10 @@
   .users-table input,
   .users-table select {
     width: 100%;
-    padding: 6px;
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 15px;
   }
   
   .users-table input:focus,
@@ -263,6 +266,20 @@
     .users-table td {
       padding: 6px;
     }
+
+    .admin-note {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      color: #333;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      max-width: 250px;
+    }
+    
   }
   
   
