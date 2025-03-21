@@ -191,7 +191,7 @@ const SuperAdminDashboard = () => {
   const [departmentFilter, setDepartmentFilter] = useState("All Departments")
   const [editedUsers, setEditedUsers] = useState({})
   const [hasChanges, setHasChanges] = useState(false)
-  
+
   // Search state for users
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -268,7 +268,7 @@ const SuperAdminDashboard = () => {
   // UNIVERSAL SEARCH: convert the user object to a single string and search it
   const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase()
-    const userString = Object.values(user).join(" ").toLowerCase() // all fields combined
+    const userString = Object.values(user).join(" ").toLowerCase()
     return userString.includes(query)
   })
 
@@ -300,7 +300,8 @@ const SuperAdminDashboard = () => {
       <div className="admin-container">
         <div className="filter-container">
           {activeView === "orders" ? (
-            <>
+            // Orders filter
+            <div className="orders-filter-wrapper">
               <label htmlFor="filter">Filter:</label>
               <select
                 id="filter"
@@ -312,9 +313,10 @@ const SuperAdminDashboard = () => {
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
-            </>
+            </div>
           ) : (
-            <>
+            // Users search
+            <div className="users-search-wrapper">
               <label htmlFor="search">Search:</label>
               <input
                 id="search"
@@ -323,7 +325,7 @@ const SuperAdminDashboard = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </>
+            </div>
           )}
         </div>
 
