@@ -48,6 +48,7 @@ const SuperAdminDashboard = () => {
             ? `${order.user.last_name}, ${order.user.first_name}`
             : `UserID #Unknown`,
           department: order.user?.department || "Unknown",
+          securityCode: order.securityCode || "",
         }));
         setTravelOrders(formatted);
 
@@ -339,6 +340,13 @@ const SuperAdminDashboard = () => {
                         <label>Purpose:</label>
                         <p>{order.purpose}</p>
                       </div>
+
+                      {order.status === "accepted" && order.securityCode && (
+                        <div className="detail-row">
+                          <label>Security Code:</label>
+                          <p className="security-code">{order.securityCode}</p>
+                        </div>
+                      )}
 
                       <div className="detail-row">
                         <label>Travel Order</label>

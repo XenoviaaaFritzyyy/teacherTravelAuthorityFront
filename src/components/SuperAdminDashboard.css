@@ -364,4 +364,14 @@
     width: 1%;
   }
   
+  .security-code {
+    font-weight: bold;
+    color: #0a1172;
+    background-color: #e0f7fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #00b4d8;
+    display: inline-block;
+  }
+  
   
