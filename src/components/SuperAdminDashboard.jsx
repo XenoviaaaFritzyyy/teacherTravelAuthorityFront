@@ -1,231 +1,160 @@
 "use client"
 
 import { Bell, Edit, Table } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import "./SuperAdminDashboard.css"
 
-// Mock data for travel orders
-const mockTravelOrders = [
-  {
-    id: 1,
-    teacherName: "Smith, John",
-    department: "Science",
-    startDate: "2024-03-20",
-    endDate: "2024-03-25",
-    purpose: "Science conference in Manila",
-    status: "pending",
-    comment: "",
-    leeway: "1",
-  },
-  {
-    id: 2,
-    teacherName: "Doe, Jane",
-    department: "Mathematics",
-    startDate: "2024-04-05",
-    endDate: "2024-04-10",
-    purpose: "Mathematics workshop in Cebu",
-    status: "pending",
-    comment: "",
-    leeway: "3",
-  },
-  {
-    id: 3,
-    teacherName: "Johnson, Robert",
-    department: "English",
-    startDate: "2024-03-28",
-    endDate: "2024-04-02",
-    purpose: "English literature seminar",
-    status: "pending",
-    comment: "",
-    leeway: "1",
-  },
+const departments = [
+  "All Departments",
+  "Science",
+  "Mathematics",
+  "English",
+  "Social Studies",
+  "Physical Education",
 ]
-
-// Mock data for users
-const mockUsers = [
-  {
-    id: 1,
-    username: "jsmith",
-    password: "********",
-    firstName: "John",
-    lastName: "Smith",
-    schoolId: "SCH001",
-    schoolName: "Central Elementary School",
-    district: "North District",
-    email: "john.smith@school.edu",
-    position: "Teacher",
-    contactNo: "09123456789",
-    employeeNo: "EMP001",
-    role: "Teacher",
-  },
-  {
-    id: 2,
-    username: "jdoe",
-    password: "********",
-    firstName: "Jane",
-    lastName: "Doe",
-    schoolId: "SCH001",
-    schoolName: "Central Elementary School",
-    district: "North District",
-    email: "jane.doe@school.edu",
-    position: "Teacher",
-    contactNo: "09123456790",
-    employeeNo: "EMP002",
-    role: "Teacher",
-  },
-  {
-    id: 3,
-    username: "rjohnson",
-    password: "********",
-    firstName: "Robert",
-    lastName: "Johnson",
-    schoolId: "SCH002",
-    schoolName: "South High School",
-    district: "South District",
-    email: "robert.johnson@school.edu",
-    position: "Teacher",
-    contactNo: "09123456791",
-    employeeNo: "EMP003",
-    role: "Teacher",
-  },
-  {
-    id: 4,
-    username: "mwilliams",
-    password: "********",
-    firstName: "Mary",
-    lastName: "Williams",
-    schoolId: "SCH002",
-    schoolName: "South High School",
-    district: "South District",
-    email: "mary.williams@school.edu",
-    position: "Teacher",
-    contactNo: "09123456792",
-    employeeNo: "EMP004",
-    role: "Teacher",
-  },
-  {
-    id: 5,
-    username: "dbrown",
-    password: "********",
-    firstName: "David",
-    lastName: "Brown",
-    schoolId: "SCH003",
-    schoolName: "East Elementary School",
-    district: "East District",
-    email: "david.brown@school.edu",
-    position: "Teacher",
-    contactNo: "09123456793",
-    employeeNo: "EMP005",
-    role: "Teacher",
-  },
-  {
-    id: 6,
-    username: "mgarcia",
-    password: "********",
-    firstName: "Maria",
-    lastName: "Garcia",
-    schoolId: "SCH003",
-    schoolName: "East Elementary School",
-    district: "East District",
-    email: "maria.garcia@school.edu",
-    position: "Teacher",
-    contactNo: "09123456794",
-    employeeNo: "EMP006",
-    role: "Teacher",
-  },
-  {
-    id: 7,
-    username: "jlee",
-    password: "********",
-    firstName: "James",
-    lastName: "Lee",
-    schoolId: "SCH004",
-    schoolName: "West High School",
-    district: "West District",
-    email: "james.lee@school.edu",
-    position: "Teacher",
-    contactNo: "09123456795",
-    employeeNo: "EMP007",
-    role: "Teacher",
-  },
-  {
-    id: 8,
-    username: "aadmin",
-    password: "********",
-    firstName: "Admin",
-    lastName: "User",
-    schoolId: "ADMIN",
-    schoolName: "Department of Education",
-    district: "Central",
-    email: "admin@deped.gov",
-    position: "Administrator",
-    contactNo: "09123456796",
-    employeeNo: "ADM001",
-    role: "Admin",
-  },
-  {
-    id: 9,
-    username: "superadmin",
-    password: "********",
-    firstName: "Super",
-    lastName: "Admin",
-    schoolId: "ADMIN",
-    schoolName: "Department of Education",
-    district: "Central",
-    email: "superadmin@deped.gov",
-    position: "Super Administrator",
-    contactNo: "09123456797",
-    role: "SuperAdmin",
-  },
-]
-
-// Department options for filtering
-const departments = ["All Departments", "Science", "Mathematics", "English", "Social Studies", "Physical Education"]
 
 const SuperAdminDashboard = () => {
-  const [activeView, setActiveView] = useState("orders") // "orders" or "users"
-  const [travelOrders, setTravelOrders] = useState(mockTravelOrders)
-  const [users, setUsers] = useState(mockUsers)
+  const [activeView, setActiveView] = useState("orders")
+  const [travelOrders, setTravelOrders] = useState([])
+  const [users, setUsers] = useState([])
   const [expandedId, setExpandedId] = useState(null)
   const [statusFilter, setStatusFilter] = useState("pending")
   const [departmentFilter, setDepartmentFilter] = useState("All Departments")
   const [editedUsers, setEditedUsers] = useState({})
   const [hasChanges, setHasChanges] = useState(false)
-
-  // Search state for users
   const [searchQuery, setSearchQuery] = useState("")
+  const [remarkText, setRemarkText] = useState("")
+
+  // Fetch travel requests and users
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Fetch travel requests
+        const ordersRes = await axios.get("http://localhost:3000/travel-requests", { headers });
+        const validatedOrders = ordersRes.data.filter(order => order.validationStatus === 'VALIDATED');
+        
+        const formatted = validatedOrders.map((order) => ({
+          id: order.id,
+          purpose: order.purpose || "",
+          status: order.status || "pending",
+          remarks: order.remarks || "",
+          startDate: order.startDate ? order.startDate.slice(0, 10) : "",
+          endDate: order.endDate ? order.endDate.slice(0, 10) : "",
+          teacherName: order.user
+            ? `${order.user.last_name}, ${order.user.first_name}`
+            : `UserID #Unknown`,
+          department: order.user?.department || "Unknown",
+        }));
+        setTravelOrders(formatted);
+
+        // Fetch users with complete data
+        const usersRes = await axios.get("http://localhost:3000/users", { headers });
+        console.log('Fetched users:', usersRes.data); // Add this for debugging
+        
+        // Transform the user data if needed
+        const formattedUsers = usersRes.data.map(user => ({
+          ...user,
+          // Ensure role is properly set from the database value
+          role: user.role || 'Teacher' // Default to Teacher if role is undefined
+        }));
+        
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Filter travel orders based on status
   const filteredOrders = travelOrders.filter((order) => {
-    return statusFilter === "all" || order.status === statusFilter
-  })
+    if (statusFilter === "all") return true;
+    // Match "accepted" status while showing as "approved" in UI
+    return order.status.toLowerCase() === statusFilter.toLowerCase();
+  });
 
   const handleOrderClick = (id) => {
     if (expandedId === id) {
-      setExpandedId(null)
+      setExpandedId(null);
+      setRemarkText("");
     } else {
-      setExpandedId(id)
-      // Find the order and set department if it exists
-      const order = travelOrders.find((o) => o.id === id)
-      setDepartmentFilter(order?.department || "All Departments")
+      setExpandedId(id);
+      const order = travelOrders.find((o) => o.id === id);
+      setRemarkText(order?.remarks || "");
+      setDepartmentFilter(order?.department || "All Departments");
     }
-  }
+  };
 
-  const handleDepartmentChange = (e) => {
-    setDepartmentFilter(e.target.value)
-  }
+  const handleAccept = async (id) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/status`,
+        { status: "accepted" },
+        { headers: { 'Authorization': `Bearer ${token}` }}
+      );
 
-  const handleStatusFilterChange = (e) => {
-    setStatusFilter(e.target.value)
-  }
+      if (remarkText.trim()) {
+        await axios.patch(
+          `http://localhost:3000/travel-requests/${id}/remarks`,
+          { remarks: remarkText },
+          { headers: { 'Authorization': `Bearer ${token}` }}
+        );
+      }
 
-  const handleSendOrder = (id) => {
-    setTravelOrders((prevOrders) =>
-      prevOrders.map((order) => (order.id === id ? { ...order, status: "approved" } : order))
-    )
-    setExpandedId(null)
-  }
+      setTravelOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id
+            ? { ...order, status: "accepted", remarks: remarkText || order.remarks }
+            : order
+        )
+      );
+      setExpandedId(null);
+      alert('Travel request accepted successfully!');
+    } catch (error) {
+      console.error("Failed to accept travel request:", error);
+      alert('Failed to accept travel request. Please try again.');
+    }
+  };
 
+  const handleReject = async (id) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/status`,
+        { status: "rejected" },
+        { headers: { 'Authorization': `Bearer ${token}` }}
+      );
+
+      if (remarkText.trim()) {
+        await axios.patch(
+          `http://localhost:3000/travel-requests/${id}/remarks`,
+          { remarks: remarkText },
+          { headers: { 'Authorization': `Bearer ${token}` }}
+        );
+      }
+
+      setTravelOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id
+            ? { ...order, status: "rejected", remarks: remarkText || order.remarks }
+            : order
+        )
+      );
+      setExpandedId(null);
+      alert('Travel request rejected successfully!');
+    } catch (error) {
+      console.error("Failed to reject travel request:", error);
+      alert('Failed to reject travel request. Please try again.');
+    }
+  };
+
+  // User management handlers
   const handleUserChange = (id, field, value) => {
     setEditedUsers((prev) => ({
       ...prev,
@@ -233,30 +162,42 @@ const SuperAdminDashboard = () => {
         ...prev[id],
         [field]: value,
       },
-    }))
-    setHasChanges(true)
-  }
+    }));
+    setHasChanges(true);
+  };
 
-  const handleSaveChanges = () => {
-    // Apply all changes to the users
-    const updatedUsers = users.map((user) => {
-      if (editedUsers[user.id]) {
-        return { ...user, ...editedUsers[user.id] }
+  const handleSaveChanges = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      // Update each edited user
+      for (const [userId, updates] of Object.entries(editedUsers)) {
+        await axios.put(
+          `http://localhost:3000/users/${userId}`,
+          updates,
+          { headers }
+        );
       }
-      return user
-    })
 
-    setUsers(updatedUsers)
-    setEditedUsers({})
-    setHasChanges(false)
-    alert("Changes saved successfully!")
-  }
+      // Refresh users list
+      const response = await axios.get("http://localhost:3000/users", { headers });
+      setUsers(response.data);
+      
+      setEditedUsers({});
+      setHasChanges(false);
+      alert("Changes saved successfully!");
+    } catch (error) {
+      console.error("Failed to save changes:", error);
+      alert("Failed to save changes. Please try again.");
+    }
+  };
 
   const getStatusTitle = () => {
     switch (statusFilter) {
       case "pending":
         return "PENDING"
-      case "approved":
+      case "accepted":
         return "APPROVED"
       case "rejected":
         return "REJECTED"
@@ -271,6 +212,18 @@ const SuperAdminDashboard = () => {
     const userString = Object.values(user).join(" ").toLowerCase()
     return userString.includes(query)
   })
+
+  // Update the role options in the users table
+  const roleOptions = [
+    { value: "Teacher", label: "Teacher" },
+    { value: "AO Admin", label: "AO Admin" },
+    { value: "Admin", label: "Admin" }
+  ];
+
+  // Update the status filter options
+  const handleStatusFilterChange = (e) => {
+    setStatusFilter(e.target.value);
+  };
 
   return (
     <div className="super-admin-dashboard">
@@ -310,7 +263,7 @@ const SuperAdminDashboard = () => {
               >
                 <option value="all">All</option>
                 <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
+                <option value="accepted">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
@@ -336,12 +289,16 @@ const SuperAdminDashboard = () => {
               {filteredOrders.map((order) => (
                 <div
                   key={order.id}
-                  className={`order-item ${expandedId === order.id ? "expanded" : ""}`}
+                  className={`order-item ${
+                    expandedId === order.id ? "expanded" : ""
+                  } ${order.status.toLowerCase()}`}
                   onClick={() => handleOrderClick(order.id)}
                 >
                   <div className="order-header">
                     <span className="teacher-name">{order.teacherName}</span>
-                    <span className="order-date">{order.startDate}</span>
+                    <span className="order-date">
+                      {order.startDate} to {order.endDate}
+                    </span>
                   </div>
 
                   {expandedId === order.id && (
@@ -350,7 +307,7 @@ const SuperAdminDashboard = () => {
                         <div className="department-filter">
                           <select
                             value={departmentFilter}
-                            onChange={handleDepartmentChange}
+                            onChange={(e) => setDepartmentFilter(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
                           >
                             {departments.map((dept) => (
@@ -363,18 +320,46 @@ const SuperAdminDashboard = () => {
                       </div>
 
                       <div className="detail-row">
+                        <label>Purpose:</label>
+                        <p>{order.purpose}</p>
+                      </div>
+
+                      <div className="detail-row">
                         <label>Travel Order</label>
+                      </div>
+
+                      <div className="remark-section">
+                        <label htmlFor={`remark-${order.id}`}>Remark:</label>
+                        {order.remarks && (
+                          <p className="existing-remarks">{order.remarks}</p>
+                        )}
+                        <textarea
+                          id={`remark-${order.id}`}
+                          value={remarkText}
+                          onChange={(e) => setRemarkText(e.target.value)}
+                          placeholder="Add your remark here..."
+                          onClick={(e) => e.stopPropagation()}
+                        />
                       </div>
 
                       <div className="action-buttons">
                         <button
-                          className="send-button"
+                          className="accept-button"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handleSendOrder(order.id)
+                            e.stopPropagation();
+                            handleAccept(order.id);
                           }}
                         >
-                          SEND
+                          ACCEPT
+                        </button>
+                        <button
+                          className="reject-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReject(order.id);
+                          }}
+                        >
+                          REJECT
                         </button>
                       </div>
                     </div>
@@ -418,36 +403,36 @@ const SuperAdminDashboard = () => {
                       <td>
                         <input
                           type="password"
-                          value={editedUsers[user.id]?.password || user.password}
+                          value={editedUsers[user.id]?.password || "********"}
                           onChange={(e) => handleUserChange(user.id, "password", e.target.value)}
                         />
                       </td>
                       <td>
                         <input
                           type="text"
-                          value={editedUsers[user.id]?.firstName || user.firstName}
-                          onChange={(e) => handleUserChange(user.id, "firstName", e.target.value)}
+                          value={editedUsers[user.id]?.first_name || user.first_name}
+                          onChange={(e) => handleUserChange(user.id, "first_name", e.target.value)}
                         />
                       </td>
                       <td>
                         <input
                           type="text"
-                          value={editedUsers[user.id]?.lastName || user.lastName}
-                          onChange={(e) => handleUserChange(user.id, "lastName", e.target.value)}
+                          value={editedUsers[user.id]?.last_name || user.last_name}
+                          onChange={(e) => handleUserChange(user.id, "last_name", e.target.value)}
                         />
                       </td>
                       <td>
                         <input
                           type="text"
-                          value={editedUsers[user.id]?.schoolId || user.schoolId}
-                          onChange={(e) => handleUserChange(user.id, "schoolId", e.target.value)}
+                          value={editedUsers[user.id]?.school_id || user.school_id}
+                          onChange={(e) => handleUserChange(user.id, "school_id", e.target.value)}
                         />
                       </td>
                       <td>
                         <input
                           type="text"
-                          value={editedUsers[user.id]?.schoolName || user.schoolName}
-                          onChange={(e) => handleUserChange(user.id, "schoolName", e.target.value)}
+                          value={editedUsers[user.id]?.school_name || user.school_name}
+                          onChange={(e) => handleUserChange(user.id, "school_name", e.target.value)}
                         />
                       </td>
                       <td>
@@ -474,15 +459,15 @@ const SuperAdminDashboard = () => {
                       <td>
                         <input
                           type="text"
-                          value={editedUsers[user.id]?.contactNo || user.contactNo}
-                          onChange={(e) => handleUserChange(user.id, "contactNo", e.target.value)}
+                          value={editedUsers[user.id]?.contact_no || user.contact_no}
+                          onChange={(e) => handleUserChange(user.id, "contact_no", e.target.value)}
                         />
                       </td>
                       <td>
                         <input
                           type="text"
-                          value={editedUsers[user.id]?.employeeNo || user.employeeNo}
-                          onChange={(e) => handleUserChange(user.id, "employeeNo", e.target.value)}
+                          value={editedUsers[user.id]?.employee_number || user.employee_number}
+                          onChange={(e) => handleUserChange(user.id, "employee_number", e.target.value)}
                         />
                       </td>
                       <td>
@@ -490,9 +475,11 @@ const SuperAdminDashboard = () => {
                           value={editedUsers[user.id]?.role || user.role}
                           onChange={(e) => handleUserChange(user.id, "role", e.target.value)}
                         >
-                          <option value="Teacher">Teacher</option>
-                          <option value="Admin">Admin</option>
-                          <option value="SuperAdmin">SuperAdmin</option>
+                          {roleOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </td>
                     </tr>
