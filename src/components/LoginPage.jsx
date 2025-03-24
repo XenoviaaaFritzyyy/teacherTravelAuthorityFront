@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import "./LoginPage.css"
+import ChangePasswordModal from "./ChangePasswordModal"
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -17,6 +18,8 @@ const LoginPage = () => {
 
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [tempUserData, setTempUserData] = useState(null)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -43,75 +46,109 @@ const LoginPage = () => {
     return Object.keys(tempErrors).length === 0
   }
 
+  const handlePasswordChange = async (newPassword) => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch('http://localhost:3000/users/change-password', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: 'password123',
+          newPassword: newPassword,
+        }),
+      })
+
+      if (response.ok) {
+        setShowPasswordModal(false)
+        login(tempUserData)
+        navigate('/dashboard')
+      } else {
+        const errorData = await response.json()
+        setErrors({ submit: errorData.message || 'Failed to change password' })
+      }
+    } catch (error) {
+      console.error('Password change error:', error)
+      setErrors({ submit: 'Failed to change password' })
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (validateForm()) {
-        setIsLoading(true)
-        try {
-            const response = await fetch('http://localhost:3000/auth/signin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: formData.email,
-                    password: formData.password,
+      setIsLoading(true)
+      try {
+        const response = await fetch('http://localhost:3000/auth/signin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          localStorage.setItem('accessToken', data.accessToken)
+          
+          try {
+            const userResponse = await fetch('http://localhost:3000/users/me', {
+              headers: {
+                'Authorization': `Bearer ${data.accessToken}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (userResponse.ok) {
+              const userData = await userResponse.json()
+              
+              if (userData.requirePasswordChange) {
+                setTempUserData(userData)
+                setShowPasswordModal(true)
+                return
+              }
+
+              const isProfileComplete = userData.school_id && 
+                                      userData.school_name && 
+                                      userData.district && 
+                                      userData.position
+
+              if (!isProfileComplete) {
+                navigate("/profile", {
+                  state: { message: "Please complete your profile information." },
                 })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('accessToken', data.accessToken);
-                
-                try {
-                    const userResponse = await fetch('http://localhost:3000/users/me', {
-                        headers: {
-                            'Authorization': `Bearer ${data.accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (userResponse.ok) {
-                        const userData = await userResponse.json();
-                        login(userData);
-
-                        const isProfileComplete = userData.school_id && 
-                                                userData.school_name && 
-                                                userData.district && 
-                                                userData.position;
-
-                        if (!isProfileComplete) {
-                            navigate("/profile", {
-                                state: { message: "Please complete your profile information." },
-                            });
-                        } else {
-                            navigate("/dashboard");
-                        }
-                    } else {
-                        const errorData = await userResponse.json();
-                        setErrors({ submit: errorData.message || 'Failed to fetch user data' });
-                    }
-                } catch (userError) {
-                    console.error('User fetch error:', userError);
-                    setErrors({ submit: 'Failed to fetch user profile' });
-                }
-            } else if (response.status === 404) {
-                setErrors({ submit: <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'red' }}>Create an account first.</span> });
-            } else if (response.status === 401) {
-                setErrors({ submit: <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'red' }}>Incorrect email or password.</span> });
+              } else {
+                navigate("/dashboard")
+              }
             } else {
-                const errorData = await response.json();
-                setErrors({ submit: errorData.message || 'Invalid email or password' });
+              const errorData = await userResponse.json()
+              setErrors({ submit: errorData.message || 'Failed to fetch user data' })
             }
-        } catch (error) {
-            console.error('Login error:', error);
-            setErrors({ submit: 'Network error occurred' });
-        } finally {
-            setIsLoading(false);
+          } catch (userError) {
+            console.error('User fetch error:', userError)
+            setErrors({ submit: 'Failed to fetch user profile' })
+          }
+        } else if (response.status === 404) {
+          setErrors({ submit: <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'red' }}>Create an account first.</span> })
+        } else if (response.status === 401) {
+          setErrors({ submit: <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'red' }}>Incorrect email or password.</span> })
+        } else {
+          const errorData = await response.json()
+          setErrors({ submit: errorData.message || 'Invalid email or password' })
         }
+      } catch (error) {
+        console.error('Login error:', error)
+        setErrors({ submit: 'Network error occurred' })
+      } finally {
+        setIsLoading(false)
+      }
     }
-};
+  }
 
   return (
     <div className="login-page">
@@ -164,6 +201,13 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {showPasswordModal && (
+        <ChangePasswordModal
+          onSubmit={handlePasswordChange}
+          onClose={() => setShowPasswordModal(false)}
+        />
+      )}
     </div>
   )
 }

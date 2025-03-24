@@ -344,4 +344,24 @@
     border-left: 4px solid #4caf50;
   }
   
+  .reset-password-button {
+    padding: 6px 12px;
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+  }
+  
+  .reset-password-button:hover {
+    background-color: #f57c00;
+  }
+  
+  .users-table td:last-child {
+    white-space: nowrap;
+    width: 1%;
+  }
+  
   

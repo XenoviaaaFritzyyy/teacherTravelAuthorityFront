@@ -225,6 +225,22 @@ const SuperAdminDashboard = () => {
     setStatusFilter(e.target.value);
   };
 
+  // Add this new handler for password reset
+  const handleResetPassword = async (userId) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.post(
+        `http://localhost:3000/users/${userId}/reset-password`,
+        {},
+        { headers: { 'Authorization': `Bearer ${token}` }}
+      );
+      alert('Password has been reset to "password123". User will be required to change password on next login.');
+    } catch (error) {
+      console.error("Failed to reset password:", error);
+      alert("Failed to reset password. Please try again.");
+    }
+  };
+
   return (
     <div className="super-admin-dashboard">
       <header className="admin-header">
@@ -387,6 +403,7 @@ const SuperAdminDashboard = () => {
                     <th>Contact No.</th>
                     <th>Employee No.</th>
                     <th>Role</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -481,6 +498,19 @@ const SuperAdminDashboard = () => {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td>
+                        <button
+                          className="reset-password-button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (window.confirm('Are you sure you want to reset this user\'s password?')) {
+                              handleResetPassword(user.id);
+                            }
+                          }}
+                        >
+                          Reset Password
+                        </button>
                       </td>
                     </tr>
                   ))}
