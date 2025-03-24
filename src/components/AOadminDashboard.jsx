@@ -27,9 +27,14 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchTravelOrders = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/travel-requests")
+        const token = localStorage.getItem('accessToken');
+        const res = await axios.get("http://localhost:3000/travel-requests", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-        console.log("Travel requests data:", res.data)
+        console.log("Travel requests data:", res.data);
 
         // Transform the data to fit your display needs
         const formatted = res.data.map((order) => ({
@@ -86,14 +91,25 @@ const AdminDashboard = () => {
   const handleStatusChange = (e) => setStatusFilter(e.target.value)
   const handleSearchChange = (e) => setSearchTerm(e.target.value)
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    return {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
+  };
+
   const handleAccept = async (id) => {
     try {
-      await axios.patch(`http://localhost:3000/travel-requests/${id}/status`, {
-        status: "accepted",
-      })
+      const token = localStorage.getItem('accessToken');
+      await axios.patch(`http://localhost:3000/travel-requests/${id}/status`, 
+        { status: "accepted" },
+        getAuthHeaders()
+      );
       await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
         remarks: remarkText,
-      })
+      }, getAuthHeaders())
 
       setTravelOrders((prevOrders) =>
         prevOrders.map((order) =>
@@ -110,19 +126,20 @@ const AdminDashboard = () => {
 
   const handleReject = async (id) => {
     try {
-      // Update the validation status to REJECTED
-      await axios.patch(`http://localhost:3000/travel-requests/${id}/validate`, {
-        validationStatus: 'REJECTED'
-      });
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/validate`,
+        { validationStatus: 'REJECTED' },
+        getAuthHeaders()
+      );
 
-      // Add remarks if any
       if (remarkText.trim()) {
-        await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
-          remarks: remarkText
-        });
+        await axios.patch(
+          `http://localhost:3000/travel-requests/${id}/remarks`,
+          { remarks: remarkText },
+          getAuthHeaders()
+        );
       }
 
-      // Update local state - update validationStatus, not status
       setTravelOrders(prevOrders =>
         prevOrders.map(order =>
           order.id === id
@@ -149,15 +166,16 @@ const AdminDashboard = () => {
         return;
       }
 
-      await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
-        remarks: remarkText
-      });
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/remarks`,
+        { remarks: remarkText },
+        getAuthHeaders()
+      );
 
-      // Update the local state to match the backend structure
       setTravelOrders(prevOrders =>
         prevOrders.map(order =>
           order.id === id
-            ? { ...order, remarks: remarkText } // Changed from remark to remarks
+            ? { ...order, remarks: remarkText }
             : order
         )
       );
@@ -170,19 +188,20 @@ const AdminDashboard = () => {
 
   const handleValidate = async (id) => {
     try {
-      // Update the validation status
-      await axios.patch(`http://localhost:3000/travel-requests/${id}/validate`, {
-        validationStatus: 'VALIDATED'
-      });
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/validate`,
+        { validationStatus: 'VALIDATED' },
+        getAuthHeaders()
+      );
 
-      // Add remarks if any
       if (remarkText.trim()) {
-        await axios.patch(`http://localhost:3000/travel-requests/${id}/remarks`, {
-          remarks: remarkText
-        });
+        await axios.patch(
+          `http://localhost:3000/travel-requests/${id}/remarks`,
+          { remarks: remarkText },
+          getAuthHeaders()
+        );
       }
 
-      // Update local state - update validationStatus, not status
       setTravelOrders(prevOrders =>
         prevOrders.map(order =>
           order.id === id

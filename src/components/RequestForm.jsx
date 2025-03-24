@@ -65,6 +65,11 @@ const RequestForm = () => {
     if (validateForm()) {
       setIsSubmitting(true)
       try {
+        const token = localStorage.getItem('accessToken')
+        if (!token) {
+          throw new Error('No authentication token found')
+        }
+
         const requestData = {
           purpose: formData.purpose.trim(),
           startDate: new Date(formData.startDate).toISOString().split('T')[0],
@@ -75,32 +80,34 @@ const RequestForm = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(requestData)
         })
 
-        if (response.ok) {
-          setShowSuccess(true)
-          setFormData({
-            purpose: "",
-            startDate: "",
-            endDate: "",
-          })
-          
-          setTimeout(() => {
-            setShowSuccess(false)
-          }, 3000)
-        } else {
-          const errorData = await response.json()
-          setErrors({ 
-            submit: errorData.message || 'Failed to submit request. Please try again.' 
-          })
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Handle unauthorized access
+            throw new Error('Please login again')
+          }
+          throw new Error('Failed to submit request')
         }
+
+        const data = await response.json()
+        setShowSuccess(true)
+        setFormData({
+          purpose: "",
+          startDate: "",
+          endDate: "",
+        })
+        
+        setTimeout(() => {
+          setShowSuccess(false)
+        }, 3000)
       } catch (error) {
-        console.error('Network error:', error)
+        console.error('Error:', error)
         setErrors({ 
-          submit: 'Network error occurred. Please check your connection and try again.' 
+          submit: error.message || 'Failed to submit request. Please try again.' 
         })
       } finally {
         setIsSubmitting(false)
