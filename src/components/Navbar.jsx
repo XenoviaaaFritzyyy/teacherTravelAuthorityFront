@@ -1,9 +1,10 @@
 "use client"
 
 import { Bell, Home, User } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
+import axios from "axios"
 import "./Navbar.css"
 
 const Navbar = () => {
@@ -11,6 +12,24 @@ const Navbar = () => {
   const { user, logout } = useUser()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    const fetchUnreadNotifications = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.get('http://localhost:3000/notifications', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const unread = response.data.filter(n => !n.isRead).length;
+        setUnreadCount(unread);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchUnreadNotifications();
+  }, []);
 
   const handleHomeClick = () => {
     navigate("/dashboard")
@@ -58,6 +77,7 @@ const Navbar = () => {
           <div className="notification-container">
             <button className="icon-button" onClick={handleNotificationClick}>
               <Bell className="icon" />
+              {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
             </button>
 
             {showNotifications && (

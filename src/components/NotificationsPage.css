@@ -34,6 +34,12 @@
     cursor: pointer;
     transition: all 0.3s ease;
     border: 1px solid transparent;
+    position: relative;
+  }
+  
+  .notification-item.unread {
+    background-color: #f8f9fa;
+    border-left: 4px solid #ff4444;
   }
   
   .notification-item:hover {
@@ -48,25 +54,11 @@
     gap: 15px;
   }
   
-  .teacher-name {
+  .notification-type {
     flex: 1;
     font-weight: 500;
     color: #333;
-  }
-  
-  .status {
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .status.approved {
-    color: #0a1172;
-  }
-  
-  .status.rejected {
-    color: #dc3545;
+    text-transform: capitalize;
   }
   
   .date {
@@ -80,18 +72,25 @@
     border-top: 1px solid #eee;
   }
   
-  .reason {
+  .message {
     color: #555;
     font-size: 14px;
     line-height: 1.5;
   }
   
-  .reason p {
+  .message p {
     margin: 0;
   }
   
   .notification-item.expanded {
     background-color: #f5fcfd;
+  }
+  
+  .no-notifications {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
   }
   
   @media (max-width: 600px) {
@@ -104,6 +103,26 @@
     .date {
       align-self: flex-end;
     }
+  }
+  
+  .download-pdf-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+  }
+  
+  .download-pdf-button:hover {
+    background-color: #45a049;
+  }
+  
+  .download-pdf-button:active {
+    background-color: #3d8b40;
   }
   
   

@@ -1,61 +1,65 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import Navbar from "./Navbar"
 import "./NotificationsPage.css"
 
-// Mock data for notifications
-const mockNotifications = [
-  {
-    id: 1,
-    teacherName: "Smith, John",
-    status: "APPROVED",
-    date: "2024-03-15",
-    reason: "Travel request approved. All documentation is complete and verified.",
-  },
-  {
-    id: 2,
-    teacherName: "Doe, Jane",
-    status: "APPROVED",
-    date: "2024-03-14",
-    reason: "Professional development request approved. Budget allocation confirmed.",
-  },
-  {
-    id: 3,
-    teacherName: "Johnson, Robert",
-    status: "APPROVED",
-    date: "2024-03-13",
-    reason: "Conference attendance request approved. Alignment with development goals verified.",
-  },
-  {
-    id: 4,
-    teacherName: "Williams, Mary",
-    status: "REJECTED",
-    date: "2024-03-12",
-    reason: "Request rejected due to incomplete documentation. Please resubmit with complete travel itinerary.",
-  },
-  {
-    id: 5,
-    teacherName: "Brown, David",
-    status: "REJECTED",
-    date: "2024-03-11",
-    reason: "Request rejected due to budget constraints. Please consult with department head for alternatives.",
-  },
-]
-
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleDownloadPDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(
+        `http://localhost:3000/notifications/${notification.id}/pdf`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      );
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `travel-authority-${notification.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      alert('Failed to download PDF. Please try again.');
+    }
+  };
+
   return (
-    <div className={`notification-item ${isExpanded ? "expanded" : ""}`} onClick={onClick}>
+    <div className={`notification-item ${isExpanded ? "expanded" : ""} ${!notification.isRead ? "unread" : ""}`} onClick={onClick}>
       <div className="notification-header">
-        <span className="teacher-name">{notification.teacherName}</span>
-        <span className={`status ${notification.status.toLowerCase()}`}>{notification.status}</span>
-        <span className="date">{notification.date}</span>
+        <span className="notification-type">{notification.type.replace(/_/g, ' ')}</span>
+        <span className="date">{formatDate(notification.createdAt)}</span>
       </div>
       {isExpanded && (
         <div className="notification-details">
-          <div className="reason">
-            <p>{notification.reason}</p>
+          <div className="message">
+            <p>{notification.message}</p>
           </div>
+          {notification.type === 'TRAVEL_REQUEST_APPROVED' && (
+            <button className="download-pdf-button" onClick={handleDownloadPDF}>
+              Download Travel Authority PDF
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -64,9 +68,62 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
 
 const NotificationsPage = () => {
   const [expandedId, setExpandedId] = useState(null)
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const handleNotificationClick = (id) => {
-    setExpandedId(expandedId === id ? null : id)
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.get('http://localhost:3000/notifications', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setNotifications(response.data);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const handleNotificationClick = async (id) => {
+    setExpandedId(expandedId === id ? null : id);
+    
+    // Mark notification as read when clicked
+    if (expandedId !== id) {
+      try {
+        const token = localStorage.getItem('accessToken');
+        await axios.patch(`http://localhost:3000/notifications/${id}/read`, {}, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        setNotifications(prevNotifications =>
+          prevNotifications.map(notification =>
+            notification.id === id
+              ? { ...notification, isRead: true }
+              : notification
+          )
+        );
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="notifications-page">
+        <Navbar />
+        <div className="notifications-container">
+          <div className="notifications-card">
+            <h2>Loading notifications...</h2>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -76,14 +133,18 @@ const NotificationsPage = () => {
         <div className="notifications-card">
           <h2>NOTIFICATIONS</h2>
           <div className="notifications-list">
-            {mockNotifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                isExpanded={expandedId === notification.id}
-                onClick={() => handleNotificationClick(notification.id)}
-              />
-            ))}
+            {notifications.length === 0 ? (
+              <p className="no-notifications">No notifications to display</p>
+            ) : (
+              notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  isExpanded={expandedId === notification.id}
+                  onClick={() => handleNotificationClick(notification.id)}
+                />
+              ))
+            )}
           </div>
         </div>
       </div>
