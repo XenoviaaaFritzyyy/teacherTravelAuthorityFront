@@ -1,8 +1,8 @@
 "use client"
 
-import { Bell, Edit, Table } from "lucide-react"
-import { useState, useEffect } from "react"
 import axios from "axios"
+import { Bell, Edit, Table } from "lucide-react"
+import { useEffect, useState } from "react"
 import "./SuperAdminDashboard.css"
 
 const departments = [
@@ -272,17 +272,35 @@ const SuperAdminDashboard = () => {
           {activeView === "orders" ? (
             // Orders filter
             <div className="orders-filter-wrapper">
-              <label htmlFor="filter">Filter:</label>
-              <select
-                id="filter"
-                value={statusFilter}
-                onChange={handleStatusFilterChange}
-              >
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                <option value="accepted">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
+              <div className="filter-group">
+                <label htmlFor="statusFilter">Status:</label>
+                <select
+                  id="statusFilter"
+                  value={statusFilter}
+                  onChange={handleStatusFilterChange}
+                >
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="accepted">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label htmlFor="departmentFilter">Department:</label>
+                <select
+                  id="departmentFilter"
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           ) : (
             // Users search

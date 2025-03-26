@@ -373,5 +373,65 @@
     border: 1px solid #00b4d8;
     display: inline-block;
   }
+
+  .orders-filter-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
   
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   
+  .filter-group label {
+    font-weight: bold;
+    margin-top: 20px;
+  }
+  
+  #statusFilter {
+    width: 120px;
+    padding: 5px;
+    height: 35px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+  
+  #departmentFilter {
+    width: 250px;
+    padding: 5px;
+    height: 35px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+
+  /* Update the users search wrapper styles */
+  .users-search-wrapper {
+    display: flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .users-search-wrapper label {
+    font-weight: bold;
+  }
+  
+  .users-search-wrapper input {
+    width: 150px;
+    padding: 5px;
+    height: 35px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+  
+  .users-search-wrapper input:focus {
+    outline: none;
+    border-color: #00b4d8;
+  }
+
