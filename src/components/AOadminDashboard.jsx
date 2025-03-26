@@ -1,9 +1,9 @@
 // AdminDashboard.jsx
 "use client"
 
-import { Bell } from "lucide-react"
-import { useState, useEffect } from "react"
 import axios from "axios"
+import { Bell } from "lucide-react"
+import { useEffect, useState } from "react"
 import "./AOadminDashboard.css"
 
 // Departments for the dropdown
@@ -265,12 +265,27 @@ const AdminDashboard = () => {
           </div>
 
           <div className="filter-container">
-            <label htmlFor="statusFilter">Filter:</label>
+            <label htmlFor="statusFilter">Status:</label>
             <select id="statusFilter" value={statusFilter} onChange={handleStatusChange}>
               <option value="all">All</option>
               <option value="PENDING">Pending</option>
               <option value="VALIDATED">Validated</option>
               <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+
+          <div className="filter-container">
+            <label htmlFor="departmentFilter">Department:</label>
+            <select 
+              id="departmentFilter" 
+              value={departmentFilter} 
+              onChange={handleDepartmentChange}
+            >
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -296,22 +311,6 @@ const AdminDashboard = () => {
 
                   {expandedId === order.id && (
                     <div className="order-details">
-                      <div className="detail-row">
-                        <div className="department-filter">
-                          <select
-                            value={departmentFilter}
-                            onChange={handleDepartmentChange}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {departments.map((dept) => (
-                              <option key={dept} value={dept}>
-                                {dept}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
                       <div className="detail-row">
                         <label>Purpose:</label>
                         <p>{order.purpose}</p>
