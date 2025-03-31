@@ -6,6 +6,7 @@ import "./RequestForm.css"
 const RequestForm = () => {
   const [formData, setFormData] = useState({
     purpose: "",
+    department: "", // Add department to initial state
     startDate: "",
     endDate: "",
   })
@@ -45,6 +46,10 @@ const RequestForm = () => {
       tempErrors.purpose = "Purpose is required"
     }
 
+    if (!formData.department.trim()) {
+      tempErrors.department = "Department is required"
+    }
+
     if (!formData.startDate) {
       tempErrors.startDate = "Start date is required"
     }
@@ -72,6 +77,7 @@ const RequestForm = () => {
 
         const requestData = {
           purpose: formData.purpose.trim(),
+          department: formData.department.trim(), // Add department to request data
           startDate: new Date(formData.startDate).toISOString().split('T')[0],
           endDate: new Date(formData.endDate).toISOString().split('T')[0],
         }
@@ -97,6 +103,7 @@ const RequestForm = () => {
         setShowSuccess(true)
         setFormData({
           purpose: "",
+          department: "", // Reset department field
           startDate: "",
           endDate: "",
         })
@@ -140,6 +147,21 @@ const RequestForm = () => {
               rows={3}
             />
             {errors.purpose && <span className="error-message">{errors.purpose}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="department">Department:</label>
+            <input
+              type="text"
+              id="department"
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              placeholder="Select at least two Department"
+              className={errors.department ? "error" : ""}
+              disabled={isSubmitting}
+            />
+            {errors.department && <span className="error-message">{errors.department}</span>}
           </div>
 
           <div className="date-container">
