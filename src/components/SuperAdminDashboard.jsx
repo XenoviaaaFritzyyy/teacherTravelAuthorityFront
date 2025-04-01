@@ -58,6 +58,9 @@ const SuperAdminDashboard = () => {
   const [hasChanges, setHasChanges] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [remarkText, setRemarkText] = useState("")
+  const [showPositionModal, setShowPositionModal] = useState(false)
+  const [userToUpdate, setUserToUpdate] = useState(null)
+  const [currentUser, setCurrentUser] = useState(null)
 
   // Fetch travel requests and users
   useEffect(() => {
@@ -65,6 +68,10 @@ const SuperAdminDashboard = () => {
       try {
         const token = localStorage.getItem('accessToken');
         const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Add this to fetch current user
+        const userRes = await axios.get("http://localhost:3000/users/me", { headers });
+        setCurrentUser(userRes.data);
 
         // Fetch travel requests
         const ordersRes = await axios.get("http://localhost:3000/travel-requests", { headers });
@@ -80,8 +87,10 @@ const SuperAdminDashboard = () => {
           teacherName: order.user
             ? `${order.user.last_name}, ${order.user.first_name}`
             : `UserID #Unknown`,
-          // If order.user.department is not defined, fallback to "Unknown"
-          department: order.user?.department || "Unknown",
+          // Update department handling to match AOadminDashboard
+          department: Array.isArray(order.department) 
+            ? order.department.join(',') 
+            : (order.department || "").toString(),
           securityCode: order.securityCode || "",
         }));
         setTravelOrders(formatted);
@@ -107,9 +116,21 @@ const SuperAdminDashboard = () => {
 
   // Filter travel orders based on status
   const filteredOrders = travelOrders.filter((order) => {
-    if (statusFilter === "all") return true;
-    // Match "accepted" status while showing as "approved" in UI
-    return order.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesSearch =
+      order.teacherName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.id.toString().includes(searchQuery);
+
+    const matchesStatus =
+      statusFilter === "all" || order.status.toLowerCase() === statusFilter.toLowerCase();
+
+    // Updated department filtering to exactly match AOadminDashboard
+    const matchesDepartment =
+      departmentFilter === "All Departments" ||
+      (order.department && 
+       order.department.split(',').map(dep => dep.trim().toLowerCase())
+         .includes(departmentFilter.toLowerCase()));
+
+    return matchesSearch && matchesStatus && matchesDepartment;
   });
 
   const handleOrderClick = (id) => {
@@ -118,9 +139,7 @@ const SuperAdminDashboard = () => {
       setRemarkText("");
     } else {
       setExpandedId(id);
-      const order = travelOrders.find((o) => o.id === id);
-      setRemarkText(order?.remarks || "");
-      setDepartmentFilter(order?.department || "All Departments");
+      setRemarkText("");
     }
   };
 
@@ -190,7 +209,19 @@ const SuperAdminDashboard = () => {
 
   // User management handlers
   const handleUserChange = (id, field, value) => {
-    setEditedUsers((prev) => ({
+    if (field === "role" && value === "AO Admin") {
+      const user = users.find(u => u.id === id);
+      setUserToUpdate({
+        id,
+        currentPosition: user?.position || '',
+        newRole: value
+      });
+      setShowPositionModal(true);
+      return;
+    }
+
+    // For all other changes, update as normal
+    setEditedUsers(prev => ({
       ...prev,
       [id]: {
         ...prev[id],
@@ -275,6 +306,102 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  // Update the handleSubmitRemark function
+  const handleSubmitRemark = async (id) => {
+    if (!remarkText.trim()) {
+      alert("Please enter a remark before submitting.");
+      return;
+    }
+
+    const order = travelOrders.find((o) => o.id === id);
+    if (!order) {
+      alert("Could not find that travel order.");
+      return;
+    }
+
+    // Format the new remark with name and position
+    const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+    
+    // Handle multiple remarks
+    const updatedRemarks = order.remarks 
+      ? `${order.remarks}\n${newRemarkWithPosition}`
+      : newRemarkWithPosition;
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/remarks`,
+        { remarks: updatedRemarks },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+
+      setTravelOrders((prevOrders) =>
+        prevOrders.map((ord) =>
+          ord.id === id ? { ...ord, remarks: updatedRemarks } : ord
+        )
+      );
+      
+      alert("Remark submitted successfully!");
+      setRemarkText("");
+    } catch (error) {
+      console.error("Failed to submit remark:", error);
+      alert("Failed to submit remark. Please try again.");
+    }
+  };
+
+  // Add position change modal component
+  const PositionChangeModal = ({ show, onClose, onConfirm, currentPosition }) => {
+    const [newPosition, setNewPosition] = useState(currentPosition);
+    const [useCustomPosition, setUseCustomPosition] = useState(false);
+
+    if (!show) return null;
+
+    return (
+      <div className="position-modal">
+        <div className="position-modal-content">
+          <h3>Update Position</h3>
+          <p>This user is being changed to an AO Admin role. Would you like to update their position?</p>
+          
+          <div className="position-selection">
+            <label>
+              <input
+                type="checkbox"
+                checked={useCustomPosition}
+                onChange={(e) => setUseCustomPosition(e.target.checked)}
+              />
+              Use custom position
+            </label>
+            
+            {useCustomPosition ? (
+              <input
+                type="text"
+                value={newPosition}
+                onChange={(e) => setNewPosition(e.target.value)}
+                placeholder="Enter custom position"
+              />
+            ) : (
+              <select
+                value={newPosition}
+                onChange={(e) => setNewPosition(e.target.value)}
+              >
+                <option value="">Select Department Position</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div className="modal-buttons">
+            <button onClick={() => onConfirm(newPosition)}>Update Position</button>
+            <button onClick={() => onConfirm(currentPosition)}>Keep Current Position</button>
+            <button onClick={onClose}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="super-admin-dashboard">
       <header className="admin-header">
@@ -307,16 +434,16 @@ const SuperAdminDashboard = () => {
             <div className="orders-filter-wrapper">
               <div className="filter-group">
                 <label htmlFor="statusFilter">Status:</label>
-                <select
+              <select
                   id="statusFilter"
-                  value={statusFilter}
-                  onChange={handleStatusFilterChange}
-                >
-                  <option value="all">All</option>
-                  <option value="pending">Pending</option>
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
                   <option value="accepted">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <option value="rejected">Rejected</option>
+              </select>
               </div>
 
               <div className="filter-group">
@@ -388,8 +515,14 @@ const SuperAdminDashboard = () => {
 
                       <div className="remark-section">
                         <label htmlFor={`remark-${order.id}`}>Remark:</label>
-                        {order.remarks && (
-                          <p className="existing-remarks">{order.remarks}</p>
+                        {order.remarks && order.remarks.trim() && (
+                          <div className="existing-remarks">
+                            {order.remarks.split('\n').map((rem, idx) => (
+                              <p key={idx} className="remarks-line">
+                                {rem.trim()}
+                              </p>
+                            ))}
+                          </div>
                         )}
                         <textarea
                           id={`remark-${order.id}`}
@@ -398,28 +531,40 @@ const SuperAdminDashboard = () => {
                           placeholder="Add your remark here..."
                           onClick={(e) => e.stopPropagation()}
                         />
+                        <button
+                          className="submit-remark-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubmitRemark(order.id);
+                          }}
+                        >
+                          Submit Remark
+                        </button>
                       </div>
 
+                      {/* Only show action buttons if status is not accepted */}
+                      {order.status !== "accepted" && (
                       <div className="action-buttons">
                         <button
-                          className="accept-button"
+                            className="accept-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAccept(order.id);
+                            }}
+                          >
+                            ACCEPT
+                          </button>
+                          <button
+                            className="reject-button"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            handleAccept(order.id);
+                              e.stopPropagation();
+                              handleReject(order.id);
                           }}
                         >
-                          ACCEPT
-                        </button>
-                        <button
-                          className="reject-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReject(order.id);
-                          }}
-                        >
-                          REJECT
+                            REJECT
                         </button>
                       </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -509,11 +654,23 @@ const SuperAdminDashboard = () => {
                         />
                       </td>
                       <td>
+                        {(editedUsers[user.id]?.role === "AO Admin" || user.role === "AO Admin") ? (
+                          <select
+                            value={editedUsers[user.id]?.position || user.position}
+                            onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
+                          >
+                            <option value="">Select Department Position</option>
+                            {departments.map(dept => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                        ) : (
                         <input
                           type="text"
                           value={editedUsers[user.id]?.position || user.position}
                           onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
                         />
+                        )}
                       </td>
                       <td>
                         <input
@@ -577,6 +734,43 @@ const SuperAdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {showPositionModal && (
+        <PositionChangeModal
+          show={showPositionModal}
+          onClose={() => {
+            setShowPositionModal(false);
+            setUserToUpdate(null);
+            // Reset the role selection in the table
+            const userId = userToUpdate?.id;
+            if (userId) {
+              setEditedUsers(prev => ({
+                ...prev,
+                [userId]: {
+                  ...prev[userId],
+                  role: users.find(u => u.id === userId)?.role || 'Teacher'
+                }
+              }));
+            }
+          }}
+          onConfirm={(newPosition) => {
+            if (userToUpdate) {
+              setEditedUsers(prev => ({
+                ...prev,
+                [userToUpdate.id]: {
+                  ...prev[userToUpdate.id],
+                  position: newPosition,
+                  role: userToUpdate.newRole
+                }
+              }));
+              setHasChanges(true);
+            }
+            setShowPositionModal(false);
+            setUserToUpdate(null);
+          }}
+          currentPosition={userToUpdate?.currentPosition || ''}
+        />
+      )}
     </div>
   )
 }

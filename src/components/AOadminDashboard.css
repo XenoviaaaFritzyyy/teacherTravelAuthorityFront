@@ -315,12 +315,23 @@
   }
   
   .existing-remarks {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+  }
+  
+  .remarks-line {
     margin: 8px 0;
     padding: 8px;
-    background-color: #f5f5f5;
+    background-color: white;
     border-radius: 4px;
-    font-size: 14px;
-    color: #666;
+    border: 1px solid #e9ecef;
+  }
+  
+  .remarks-line:not(:last-child) {
+    margin-bottom: 8px;
   }
   
   @media (max-width: 768px) {
@@ -399,5 +410,18 @@
   height: 35px;
   border-radius: 4px;
   border: 1px solid #ccc;
+}
+
+.no-permission-notice {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  color: #856404;
+}
+
+.no-permission-notice p {
+  margin: 0;
 }
 

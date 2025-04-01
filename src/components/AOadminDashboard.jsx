@@ -57,15 +57,18 @@ const AdminDashboard = () => {
   // Current user's position state
   const [userPosition, setUserPosition] = useState("");
 
+  // Add user state at the top with other state declarations
+  const [currentUser, setCurrentUser] = useState(null);
+
   useEffect(() => {
     // Fetch current user's profile and set userPosition
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:3000/users/profile", {
+        const res = await axios.get("http://localhost:3000/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("User profile:", res.data); // Verify the returned object
+        setCurrentUser(res.data);
         setUserPosition(res.data.position || "Unknown Position");
       } catch (error) {
         console.error("Failed to fetch current user profile:", error);
@@ -82,30 +85,21 @@ const AdminDashboard = () => {
         });
         console.log("Travel requests data:", res.data);
 
-        const formatted = res.data.map((order) => {
-          let departmentValue;
-          if (typeof order.department === "string") {
-            departmentValue = order.department;
-          } else if (Array.isArray(order.department)) {
-            departmentValue = order.department.join(", ");
-          } else {
-            departmentValue = "Unknown";
-          }
-
-          return {
-            id: order.id,
-            purpose: order.purpose || "",
-            status: order.status || "pending",
-            validationStatus: order.validationStatus || "PENDING",
-            remarks: order.remarks || "",
-            startDate: order.startDate ? order.startDate.slice(0, 10) : "",
-            endDate: order.endDate ? order.endDate.slice(0, 10) : "",
-            teacherName: order.user
-              ? `${order.user.last_name}, ${order.user.first_name}`
-              : `UserID #${order.userID || "Unknown"}`,
-            department: departmentValue,
-          };
-        });
+        const formatted = res.data.map((order) => ({
+          id: order.id,
+          purpose: order.purpose || "",
+          status: order.status || "pending",
+          validationStatus: order.validationStatus || "PENDING",
+          remarks: order.remarks || "",
+          startDate: order.startDate ? order.startDate.slice(0, 10) : "",
+          endDate: order.endDate ? order.endDate.slice(0, 10) : "",
+          teacherName: order.user
+            ? `${order.user.last_name}, ${order.user.first_name}`
+            : `UserID #${order.userID || "Unknown"}`,
+          department: Array.isArray(order.department) 
+            ? order.department.join(',') 
+            : (order.department || "").toString()
+        }));
 
         setTravelOrders(formatted);
       } catch (error) {
@@ -125,7 +119,7 @@ const AdminDashboard = () => {
 
   // Helper: Append user's position to a remark (e.g., "Remark text - System Administrator")
   const appendPositionToRemark = (remark) => {
-    return userPosition ? `${remark} - ${userPosition}` : remark;
+    return userPosition ? `${remark} - ${currentUser?.first_name} ${currentUser?.last_name} ${userPosition}` : remark;
   };
 
   // Helper: Combine old and new remarks using a comma separator
@@ -137,6 +131,19 @@ const AdminDashboard = () => {
     }
   };
 
+  // Add this helper function to check if user has permission for the order
+  const hasPermissionForOrder = (order) => {
+    if (!currentUser || !currentUser.position || !order.department) {
+      return false;
+    }
+
+    // Get array of departments from the order
+    const orderDepartments = order.department.split(',').map(dep => dep.trim().toLowerCase());
+    
+    // Check if user's position matches any of the order's departments
+    return orderDepartments.includes(currentUser.position.toLowerCase());
+  };
+
   // ===================== Handlers ===================== //
 
   const handleSubmitRemark = async (id) => {
@@ -144,26 +151,34 @@ const AdminDashboard = () => {
       alert("Please enter a remark before submitting.");
       return;
     }
+
     const order = travelOrders.find((o) => o.id === id);
     if (!order) {
       alert("Could not find that travel order.");
       return;
     }
-    const oldRemarks = order.remarks || "";
-    const newRemarkWithPosition = appendPositionToRemark(remarkText);
-    const appendedRemarks = combineRemarks(oldRemarks, newRemarkWithPosition);
+
+    // Format the new remark with name and position
+    const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+    
+    // Handle multiple remarks
+    const updatedRemarks = order.remarks 
+      ? `${order.remarks}\n${newRemarkWithPosition}`
+      : newRemarkWithPosition;
 
     try {
       await axios.patch(
         `http://localhost:3000/travel-requests/${id}/remarks`,
-        { remarks: appendedRemarks },
+        { remarks: updatedRemarks },
         getAuthHeaders()
       );
+
       setTravelOrders((prevOrders) =>
         prevOrders.map((ord) =>
-          ord.id === id ? { ...ord, remarks: appendedRemarks } : ord
+          ord.id === id ? { ...ord, remarks: updatedRemarks } : ord
         )
       );
+      
       alert("Remark submitted successfully!");
       setRemarkText("");
     } catch (error) {
@@ -275,11 +290,9 @@ const AdminDashboard = () => {
       statusFilter === "all" || order.validationStatus === statusFilter;
     const matchesDepartment =
       departmentFilter === "All Departments" ||
-      (typeof order.department === "string" &&
-        order.department
-          .toLowerCase()
-          .split(",")
-          .some((dep) => dep.trim().includes(departmentFilter.toLowerCase())));
+      (order.department && typeof order.department === 'string' && 
+        order.department.split(',').map(dep => dep.trim().toLowerCase())
+          .includes(departmentFilter.toLowerCase()));
     return matchesSearch && matchesStatus && matchesDepartment;
   });
 
@@ -380,50 +393,62 @@ const AdminDashboard = () => {
                       {order.remarks && order.remarks.trim() && (
                         <div className="existing-remarks">
                           <label>Existing Remarks:</label>
-                          {order.remarks.split(",").map((rem, idx) => (
-                            <p key={idx} className="remarks-line">{rem.trim()}</p>
+                          {order.remarks.split('\n').map((rem, idx) => (
+                            <p key={idx} className="remarks-line">
+                              {rem.trim()}
+                            </p>
                           ))}
                         </div>
                       )}
-                      <div className="remark-section">
-                        <label htmlFor={`remark-${order.id}`}>New Remark:</label>
-                        <textarea
-                          id={`remark-${order.id}`}
-                          value={remarkText}
-                          onChange={handleRemarkChange}
-                          placeholder="Add your remark here..."
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <button
-                          className="submit-remark-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubmitRemark(order.id);
-                          }}
-                        >
-                          Submit Remark
-                        </button>
-                      </div>
-                      {order.validationStatus === "PENDING" && (
-                        <div className="action-buttons">
-                          <button
-                            className="validate-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleValidate(order.id);
-                            }}
-                          >
-                            VALIDATE
-                          </button>
-                          <button
-                            className="reject-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(order.id);
-                            }}
-                          >
-                            REJECT
-                          </button>
+                      
+                      {/* Only show remark section and action buttons if user has permission */}
+                      {hasPermissionForOrder(order) ? (
+                        <>
+                          <div className="remark-section">
+                            <label htmlFor={`remark-${order.id}`}>New Remark:</label>
+                            <textarea
+                              id={`remark-${order.id}`}
+                              value={remarkText}
+                              onChange={handleRemarkChange}
+                              placeholder="Add your remark here..."
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <button
+                              className="submit-remark-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubmitRemark(order.id);
+                              }}
+                            >
+                              Submit Remark
+                            </button>
+                          </div>
+                          {order.validationStatus === "PENDING" && (
+                            <div className="action-buttons">
+                              <button
+                                className="validate-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleValidate(order.id);
+                                }}
+                              >
+                                VALIDATE
+                              </button>
+                              <button
+                                className="reject-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReject(order.id);
+                                }}
+                              >
+                                REJECT
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="no-permission-notice">
+                          <p>You don't have permission to add remarks or take actions on this request.</p>
                         </div>
                       )}
                     </div>
