@@ -5,14 +5,47 @@ import { Bell, Edit, Table } from "lucide-react"
 import { useEffect, useState } from "react"
 import "./SuperAdminDashboard.css"
 
+// Replacing the original departments array with the one from AOadminDashboard
 const departments = [
-  "All Departments",
-  "Science",
-  "Mathematics",
-  "English",
-  "Social Studies",
-  "Physical Education",
-]
+  "Accounting",
+  "Administrative",
+  "Administrator",
+  "Assessment and Evaluation",
+  "Assistant Schools Division Superintendent (Cluster A)",
+  "Assistant Schools Division Superintendent (Cluster B)",
+  "Assistant Schools Division Superintendent (Cluster C)",
+  "Authorized Center",
+  "Authorized Officer",
+  "Authorized Official",
+  "Budget",
+  "Cashier",
+  "CID",
+  "Client",
+  "Curriculum Management",
+  "Dental",
+  "Disbursing",
+  "Educational Support Staff and Development",
+  "Educational Facilities",
+  "General Services",
+  "HRTD",
+  "Human Resource Management",
+  "ICT",
+  "Instructional Supervision",
+  "Learning and Development",
+  "Legal",
+  "LRMDS",
+  "M and E",
+  "Medical",
+  "Office of the Schools Division Superintendent",
+  "Physical Facilities",
+  "Planning",
+  "Records",
+  "Remittance",
+  "School Governance",
+  "SGOD",
+  "Soc. Mob",
+  "Supply"
+];
 
 const SuperAdminDashboard = () => {
   const [activeView, setActiveView] = useState("orders")
@@ -47,6 +80,7 @@ const SuperAdminDashboard = () => {
           teacherName: order.user
             ? `${order.user.last_name}, ${order.user.first_name}`
             : `UserID #Unknown`,
+          // If order.user.department is not defined, fallback to "Unknown"
           department: order.user?.department || "Unknown",
           securityCode: order.securityCode || "",
         }));
@@ -54,12 +88,11 @@ const SuperAdminDashboard = () => {
 
         // Fetch users with complete data
         const usersRes = await axios.get("http://localhost:3000/users", { headers });
-        console.log('Fetched users:', usersRes.data); // Add this for debugging
+        console.log('Fetched users:', usersRes.data); // Debugging
         
         // Transform the user data if needed
         const formattedUsers = usersRes.data.map(user => ({
           ...user,
-          // Ensure role is properly set from the database value
           role: user.role || 'Teacher' // Default to Teacher if role is undefined
         }));
         
@@ -294,6 +327,7 @@ const SuperAdminDashboard = () => {
                   onChange={(e) => setDepartmentFilter(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <option value="All Departments">All Departments</option>
                   {departments.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
@@ -324,9 +358,7 @@ const SuperAdminDashboard = () => {
               {filteredOrders.map((order) => (
                 <div
                   key={order.id}
-                  className={`order-item ${
-                    expandedId === order.id ? "expanded" : ""
-                  } ${order.status.toLowerCase()}`}
+                  className={`order-item ${expandedId === order.id ? "expanded" : ""} ${order.status.toLowerCase()}`}
                   onClick={() => handleOrderClick(order.id)}
                 >
                   <div className="order-header">
@@ -338,22 +370,6 @@ const SuperAdminDashboard = () => {
 
                   {expandedId === order.id && (
                     <div className="order-details">
-                      <div className="detail-row">
-                        <div className="department-filter">
-                          <select
-                            value={departmentFilter}
-                            onChange={(e) => setDepartmentFilter(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {departments.map((dept) => (
-                              <option key={dept} value={dept}>
-                                {dept}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
                       <div className="detail-row">
                         <label>Purpose:</label>
                         <p>{order.purpose}</p>
@@ -565,4 +581,4 @@ const SuperAdminDashboard = () => {
   )
 }
 
-export default SuperAdminDashboard
+export default SuperAdminDashboard;
