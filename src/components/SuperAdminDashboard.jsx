@@ -54,6 +54,7 @@ const SuperAdminDashboard = () => {
   const [expandedId, setExpandedId] = useState(null)
   const [statusFilter, setStatusFilter] = useState("pending")
   const [departmentFilter, setDepartmentFilter] = useState("All Departments")
+  const [showExpiredFilter, setShowExpiredFilter] = useState(false) // New state for expired filter
   const [editedUsers, setEditedUsers] = useState({})
   const [hasChanges, setHasChanges] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -61,6 +62,7 @@ const SuperAdminDashboard = () => {
   const [showPositionModal, setShowPositionModal] = useState(false)
   const [userToUpdate, setUserToUpdate] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
+  const [isCheckingExpiredCodes, setIsCheckingExpiredCodes] = useState(false) // New state for loading indicator
 
   // Fetch travel requests and users
   useEffect(() => {
@@ -92,6 +94,7 @@ const SuperAdminDashboard = () => {
             ? order.department.join(',') 
             : (order.department || "").toString(),
           securityCode: order.securityCode || "",
+          isCodeExpired: order.isCodeExpired || false, // Make sure to include isCodeExpired
         }));
         setTravelOrders(formatted);
 
@@ -106,6 +109,9 @@ const SuperAdminDashboard = () => {
         }));
         
         setUsers(formattedUsers);
+        
+        // Automatically check for expired codes when the page loads
+        await checkExpiredCodes();
       } catch (error) {
         console.error("Failed to fetch data:", error);
       }
@@ -113,6 +119,52 @@ const SuperAdminDashboard = () => {
 
     fetchData();
   }, []);
+
+  // Separate function to check expired codes that can be called from useEffect
+  const checkExpiredCodes = async () => {
+    try {
+      setIsCheckingExpiredCodes(true);
+      const token = localStorage.getItem('accessToken');
+      await axios.post(
+        "http://localhost:3000/travel-requests/check-expired-codes",
+        {},
+        { headers: { 'Authorization': `Bearer ${token}` }}
+      );
+      
+      // Refresh travel orders after updating expired codes
+      const ordersRes = await axios.get("http://localhost:3000/travel-requests", 
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      
+      const validatedOrders = ordersRes.data.filter(order => order.validationStatus === 'VALIDATED');
+      
+      const formatted = validatedOrders.map((order) => ({
+        id: order.id,
+        purpose: order.purpose || "",
+        status: order.status || "pending",
+        remarks: order.remarks || "",
+        startDate: order.startDate ? order.startDate.slice(0, 10) : "",
+        endDate: order.endDate ? order.endDate.slice(0, 10) : "",
+        teacherName: order.user
+          ? `${order.user.last_name}, ${order.user.first_name}`
+          : `UserID #Unknown`,
+        department: Array.isArray(order.department) 
+          ? order.department.join(',') 
+          : (order.department || "").toString(),
+        securityCode: order.securityCode || "",
+        isCodeExpired: order.isCodeExpired || false,
+      }));
+      
+      setTravelOrders(formatted);
+      setIsCheckingExpiredCodes(false);
+    } catch (error) {
+      console.error("Failed to check expired codes:", error);
+      setIsCheckingExpiredCodes(false);
+    }
+  };
+
+  // Add handler to fix specific code expiration issues
+  // Removed this function
 
   // Filter travel orders based on status
   const filteredOrders = travelOrders.filter((order) => {
@@ -129,8 +181,11 @@ const SuperAdminDashboard = () => {
       (order.department && 
        order.department.split(',').map(dep => dep.trim().toLowerCase())
          .includes(departmentFilter.toLowerCase()));
+         
+    // Add expired filter
+    const matchesExpired = !showExpiredFilter || order.isCodeExpired;
 
-    return matchesSearch && matchesStatus && matchesDepartment;
+    return matchesSearch && matchesStatus && matchesDepartment && matchesExpired;
   });
 
   const handleOrderClick = (id) => {
@@ -259,6 +314,10 @@ const SuperAdminDashboard = () => {
   };
 
   const getStatusTitle = () => {
+    if (showExpiredFilter) {
+      return "EXPIRED TRAVEL ORDERS";
+    }
+    
     switch (statusFilter) {
       case "pending":
         return "PENDING"
@@ -303,6 +362,52 @@ const SuperAdminDashboard = () => {
     } catch (error) {
       console.error("Failed to reset password:", error);
       alert("Failed to reset password. Please try again.");
+    }
+  };
+
+  // Add this new handler to check for expired codes
+  const handleCheckExpiredCodes = async () => {
+    try {
+      setIsCheckingExpiredCodes(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.post(
+        "http://localhost:3000/travel-requests/check-expired-codes",
+        {},
+        { headers: { 'Authorization': `Bearer ${token}` }}
+      );
+      
+      // Refresh travel orders after updating expired codes
+      const ordersRes = await axios.get("http://localhost:3000/travel-requests", 
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      
+      const validatedOrders = ordersRes.data.filter(order => order.validationStatus === 'VALIDATED');
+      
+      const formatted = validatedOrders.map((order) => ({
+        id: order.id,
+        purpose: order.purpose || "",
+        status: order.status || "pending",
+        remarks: order.remarks || "",
+        startDate: order.startDate ? order.startDate.slice(0, 10) : "",
+        endDate: order.endDate ? order.endDate.slice(0, 10) : "",
+        teacherName: order.user
+          ? `${order.user.last_name}, ${order.user.first_name}`
+          : `UserID #Unknown`,
+        department: Array.isArray(order.department) 
+          ? order.department.join(',') 
+          : (order.department || "").toString(),
+        securityCode: order.securityCode || "",
+        isCodeExpired: order.isCodeExpired || false,
+      }));
+      
+      setTravelOrders(formatted);
+      setIsCheckingExpiredCodes(false);
+      
+      alert(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`);
+    } catch (error) {
+      console.error("Failed to check expired codes:", error);
+      alert("Failed to check expired codes. Please try again.");
+      setIsCheckingExpiredCodes(false);
     }
   };
 
@@ -462,6 +567,28 @@ const SuperAdminDashboard = () => {
                   ))}
                 </select>
               </div>
+              
+              <div className="filter-group">
+                <label htmlFor="expiredFilter">
+                  <input
+                    id="expiredFilter"
+                    type="checkbox"
+                    checked={showExpiredFilter}
+                    onChange={(e) => setShowExpiredFilter(e.target.checked)}
+                  />
+                  Show Expired Only
+                </label>
+              </div>
+              
+              <div className="filter-group">
+                <button 
+                  className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
+                  onClick={handleCheckExpiredCodes}
+                  disabled={isCheckingExpiredCodes}
+                >
+                  {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
+                </button>
+              </div>
             </div>
           ) : (
             // Users search
@@ -485,7 +612,7 @@ const SuperAdminDashboard = () => {
               {filteredOrders.map((order) => (
                 <div
                   key={order.id}
-                  className={`order-item ${expandedId === order.id ? "expanded" : ""} ${order.status.toLowerCase()}`}
+                  className={`order-item ${expandedId === order.id ? "expanded" : ""} ${order.status.toLowerCase()} ${order.isCodeExpired ? "expired" : ""}`}
                   onClick={() => handleOrderClick(order.id)}
                 >
                   <div className="order-header">
@@ -502,10 +629,19 @@ const SuperAdminDashboard = () => {
                         <p>{order.purpose}</p>
                       </div>
 
-                      {order.status === "accepted" && order.securityCode && (
+                      {order.status === "accepted" && (
                         <div className="detail-row">
                           <label>Security Code:</label>
-                          <p className="security-code">{order.securityCode}</p>
+                          {order.isCodeExpired ? (
+                            <p className="security-code expired">
+                              {order.securityCode || "Code Expired"}
+                              <span className="expired-tag">(Expired)</span>
+                            </p>
+                          ) : (
+                            <p className="security-code">
+                              {order.securityCode}
+                            </p>
+                          )}
                         </div>
                       )}
 

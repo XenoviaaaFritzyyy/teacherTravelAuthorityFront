@@ -329,19 +329,103 @@
   }
   
   .order-item.pending {
-    border-left: 4px solid #ffa500;
+    border-left: 4px solid #ffc107; /* Yellow for pending */
   }
   
   .order-item.accepted {
-    border-left: 4px solid #0a1172;
+    border-left: 4px solid #28a745; /* Green for accepted */
   }
   
   .order-item.rejected {
-    border-left: 4px solid #f44336;
+    border-left: 4px solid #dc3545; /* Red for rejected */
   }
   
-  .order-item.validated {
-    border-left: 4px solid #4caf50;
+  .order-item.expired {
+    border-left: 4px solid #6c757d; /* Gray for expired */
+    background-color: #f8f9fa; /* Light gray background */
+  }
+  
+  /* Style for the expired security code text */
+  .security-code.expired {
+    color: #6c757d;
+    text-decoration: line-through;
+  }
+  
+  .expired-tag {
+    display: inline-block;
+    margin-left: 5px;
+    padding: 2px 6px;
+    background-color: #6c757d;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  /* Styles for the Check Expired Codes button */
+  .check-expired-button {
+    padding: 8px 16px;
+    background-color: #00b4d8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .check-expired-button:hover {
+    background-color: #0096c7;
+  }
+  
+  .check-expired-button.loading {
+    background-color: #90e0ef;
+    cursor: not-allowed;
+  }
+  
+  .check-expired-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  /* Styles for the Fix Specific Issues button */
+  .fix-specific-button {
+    padding: 8px 16px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+  }
+  
+  .fix-specific-button:hover {
+    background-color: #5a6268;
+  }
+  
+  .fix-specific-button.loading {
+    background-color: #adb5bd;
+    cursor: not-allowed;
+  }
+  
+  .fix-specific-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  /* Style for the expired filter checkbox */
+  .filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .filter-group input[type="checkbox"] {
+    margin: 0;
   }
   
   .reset-password-button {
@@ -497,4 +581,3 @@
     background-color: #f44336;
     color: white;
   }
-

@@ -148,6 +148,11 @@
     border-left: 4px solid #4caf50;
   }
   
+  .order-item.expired {
+    border-left: 4px solid #6c757d; /* Gray for expired */
+    background-color: #f8f9fa; /* Light gray background */
+  }
+  
   .order-header {
     display: flex;
     justify-content: space-between;
@@ -334,6 +339,67 @@
     margin-bottom: 8px;
   }
   
+  .security-code.expired {
+    color: #6c757d;
+    text-decoration: line-through;
+  }
+  
+  .expired-tag {
+    display: inline-block;
+    margin-left: 5px;
+    padding: 2px 6px;
+    background-color: #6c757d;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  .check-expired-button {
+    padding: 8px 16px;
+    background-color: #00b4d8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+  }
+  
+  .check-expired-button:hover {
+    background-color: #0096c7;
+  }
+  
+  .check-expired-button.loading {
+    background-color: #90e0ef;
+    cursor: not-allowed;
+  }
+  
+  .check-expired-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  /* Styles for the expired filter checkbox */
+  .filter-group {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+  }
+  
+  .filter-group label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .filter-group input[type="checkbox"] {
+    margin-right: 5px;
+    cursor: pointer;
+  }
+  
   @media (max-width: 768px) {
     .search-filter-container {
       flex-direction: column;
@@ -424,4 +490,3 @@
 .no-permission-notice p {
   margin: 0;
 }
-
