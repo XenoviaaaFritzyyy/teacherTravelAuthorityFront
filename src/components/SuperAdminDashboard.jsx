@@ -511,6 +511,7 @@ const SuperAdminDashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
+    window.location.reload();
     navigate('/login');
   };
 

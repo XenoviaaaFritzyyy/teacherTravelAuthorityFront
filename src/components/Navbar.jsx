@@ -57,6 +57,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout()
+    window.location.reload();
     navigate("/login")
   }
 

@@ -14,6 +14,7 @@ const ProtectedRoute = ({ children }) => {
       
       if (!token) {
         setIsLoading(false)
+        setIsAuthenticated(false)
         return
       }
 
@@ -30,14 +31,17 @@ const ProtectedRoute = ({ children }) => {
           const userData = await response.json()
           updateUser(userData)
           setIsAuthenticated(true)
+          setIsLoading(false)
         } else {
           // If token is invalid, clear it
           localStorage.removeItem('accessToken')
+          setIsAuthenticated(false)
+          setIsLoading(false)
         }
       } catch (error) {
         console.error('Auth verification failed:', error)
         localStorage.removeItem('accessToken')
-      } finally {
+        setIsAuthenticated(false)
         setIsLoading(false)
       }
     }
@@ -49,7 +53,7 @@ const ProtectedRoute = ({ children }) => {
     return <div>Loading...</div>
   }
 
-  if (!localStorage.getItem('accessToken') || !isAuthenticated) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
