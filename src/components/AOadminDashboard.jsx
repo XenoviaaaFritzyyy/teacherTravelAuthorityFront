@@ -3,6 +3,7 @@
 import axios from "axios"
 import { Bell } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "./AOadminDashboard.css"
 
 const departments = [
@@ -47,6 +48,7 @@ const departments = [
 ];
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [travelOrders, setTravelOrders] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -316,6 +318,11 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    navigate('/login');
+  };
+
   // ===================== UI / Filtering ===================== //
 
   const handleOrderClick = (id) => {
@@ -379,6 +386,9 @@ const AdminDashboard = () => {
         <div className="admin-actions">
           <button className="icon-button">
             <Bell className="icon" />
+          </button>
+          <button className="logout-button" onClick={handleLogout}>
+            Logout
           </button>
         </div>
       </header>
@@ -459,6 +469,7 @@ const AdminDashboard = () => {
                 >
                   <div className="order-header">
                     <span className="teacher-name">{order.teacherName}</span>
+                    <span className="department-info">{order.department}</span>
                     <span className="order-date">
                       {order.startDate} to {order.endDate}
                     </span>

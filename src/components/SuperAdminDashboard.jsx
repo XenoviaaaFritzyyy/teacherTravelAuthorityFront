@@ -3,6 +3,7 @@
 import axios from "axios"
 import { Bell, Edit, Table } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "./SuperAdminDashboard.css"
 
 // Replacing the original departments array with the one from AOadminDashboard
@@ -48,6 +49,7 @@ const departments = [
 ];
 
 const SuperAdminDashboard = () => {
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState("orders")
   const [travelOrders, setTravelOrders] = useState([])
   const [users, setUsers] = useState([])
@@ -507,6 +509,11 @@ const SuperAdminDashboard = () => {
     );
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    navigate('/login');
+  };
+
   return (
     <div className="super-admin-dashboard">
       <header className="admin-header">
@@ -526,9 +533,14 @@ const SuperAdminDashboard = () => {
           >
             <Edit className="nav-icon" />
           </button>
-          <button className="nav-button">
-            <Bell className="nav-icon" />
-          </button>
+          <div className="admin-actions">
+            <button className="icon-button">
+              <Bell className="icon" />
+            </button>
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -617,6 +629,7 @@ const SuperAdminDashboard = () => {
                 >
                   <div className="order-header">
                     <span className="teacher-name">{order.teacherName}</span>
+                    <span className="department-info">{order.department}</span>
                     <span className="order-date">
                       {order.startDate} to {order.endDate}
                     </span>

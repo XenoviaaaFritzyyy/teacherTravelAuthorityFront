@@ -43,8 +43,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/superadmin" element={<SuperAdminDashboard />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="AO Admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/superadmin"
+            element={
+              <ProtectedRoute requiredRole="Admin">
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Router>
     </UserProvider>

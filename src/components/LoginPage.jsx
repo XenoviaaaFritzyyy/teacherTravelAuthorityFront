@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
-import "./LoginPage.css"
 import ChangePasswordModal from "./ChangePasswordModal"
+import "./LoginPage.css"
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -64,7 +64,7 @@ const LoginPage = () => {
       if (response.ok) {
         setShowPasswordModal(false)
         login(tempUserData)
-        navigate('/dashboard')
+        handleRoleBasedRedirect(tempUserData)
       } else {
         const errorData = await response.json()
         setErrors({ submit: errorData.message || 'Failed to change password' })
@@ -72,6 +72,29 @@ const LoginPage = () => {
     } catch (error) {
       console.error('Password change error:', error)
       setErrors({ submit: 'Failed to change password' })
+    }
+  }
+
+  const handleRoleBasedRedirect = (userData) => {
+    switch (userData.role) {
+      case 'Admin':
+        navigate('/superadmin')
+        break
+      case 'AO Admin':
+        navigate('/admin')
+        break
+      default:
+        const isProfileComplete = userData.school_id && 
+                                userData.school_name && 
+                                userData.district && 
+                                userData.position
+        if (!isProfileComplete) {
+          navigate("/profile", {
+            state: { message: "Please complete your profile information." },
+          })
+        } else {
+          navigate("/dashboard")
+        }
     }
   }
 
@@ -113,18 +136,9 @@ const LoginPage = () => {
                 return
               }
 
-              const isProfileComplete = userData.school_id && 
-                                      userData.school_name && 
-                                      userData.district && 
-                                      userData.position
-
-              if (!isProfileComplete) {
-                navigate("/profile", {
-                  state: { message: "Please complete your profile information." },
-                })
-              } else {
-                navigate("/dashboard")
-              }
+              login(userData)
+              handleRoleBasedRedirect(userData)
+              
             } else {
               const errorData = await userResponse.json()
               setErrors({ submit: errorData.message || 'Failed to fetch user data' })

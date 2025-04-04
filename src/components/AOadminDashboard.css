@@ -21,14 +21,18 @@
   }
   
   .admin-actions {
-    margin-right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: auto;
+    margin-right: 20px; /* Add margin to the right */
   }
   
   .icon-button {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 8px;
+    padding: 5px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -37,12 +41,12 @@
   }
   
   .icon-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.301);
   }
   
   .icon {
-    width: 24px;
-    height: 24px;
+    width: 35px;
+    height: 35px;
     color: white;
   }
   
@@ -154,19 +158,26 @@
   }
   
   .order-header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    gap: 20px;
+    padding: 10px;
   }
   
   .teacher-name {
-    font-weight: 500;
-    color: #333;
+    font-weight: bold;
+  }
+  
+  .department-info {
+    text-align: center;
+    color: #666;
+    font-style: italic;
   }
   
   .order-date {
+    text-align: right;
     color: #666;
-    font-size: 14px;
   }
   
   .order-details {
@@ -489,4 +500,19 @@
 
 .no-permission-notice p {
   margin: 0;
+}
+
+.logout-button {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #c82333;
 }

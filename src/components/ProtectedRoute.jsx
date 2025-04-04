@@ -1,6 +1,6 @@
+import { useEffect, useState } from "react"
 import { Navigate, useLocation } from "react-router-dom"
 import { useUser } from "../context/UserContext"
-import { useEffect, useState } from "react"
 
 const ProtectedRoute = ({ children }) => {
   const { user, updateUser } = useUser()
@@ -46,61 +46,59 @@ const ProtectedRoute = ({ children }) => {
   }, [updateUser])
 
   if (isLoading) {
-    return <div>Loading...</div> // Or your loading component
+    return <div>Loading...</div>
   }
 
-  // If no token or invalid token, redirect to login
   if (!localStorage.getItem('accessToken') || !isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // If user data is not loaded yet, show loading
   if (!user) {
     return <div>Loading user data...</div>
   }
 
-  // Check if profile is complete for teacher role
-  const isProfileComplete = user.role === 'Teacher' ? (
-    user.school_id &&
-    user.school_name &&
-    user.district &&
-    user.position &&
-    user.contact_no &&
-    user.employee_number
-  ) : true // For non-teachers, consider profile always complete
-
-  // If this is dashboard and profile is not complete for teachers, redirect to profile
-  if (
-    location.pathname === "/dashboard" && 
-    user.role === 'Teacher' && 
-    !isProfileComplete
-  ) {
-    return (
-      <Navigate
-        to="/profile"
-        state={{
-          from: location,
-          message: "Please complete your profile before accessing the dashboard.",
-        }}
-        replace
-      />
-    )
+  // Define allowed routes for each role
+  const roleRoutes = {
+    'Admin': ['/superadmin'],
+    'AO Admin': ['/admin'],
+    'Teacher': ['/dashboard', '/profile', '/notifications']
   }
 
-  // For the profile page, check if it's being accessed after login
-  if (location.pathname === "/profile") {
-    // Allow access to profile page
-    return children
-  }
+  // Get allowed routes for current user's role
+  const allowedRoutes = roleRoutes[user.role] || []
 
-  // For admin routes, check role
-  if (location.pathname === "/admin" && user.role !== 'AO_ADMIN') {
-    return <Navigate to="/dashboard" replace />
-  }
+  // If current path is not in allowed routes, redirect to appropriate dashboard
+  if (!allowedRoutes.includes(location.pathname)) {
+    switch (user.role) {
+      case 'Admin':
+        return <Navigate to="/superadmin" replace />
+      case 'AO Admin':
+        return <Navigate to="/admin" replace />
+      default:
+        // For teachers, maintain the existing profile completion check
+        const isProfileComplete = user.role === 'Teacher' ? (
+          user.school_id &&
+          user.school_name &&
+          user.district &&
+          user.position &&
+          user.contact_no &&
+          user.employee_number
+        ) : true
 
-  // For superadmin routes, check role
-  if (location.pathname === "/superadmin" && user.role !== 'ADMIN') {
-    return <Navigate to="/dashboard" replace />
+        if (!isProfileComplete) {
+          return (
+            <Navigate
+              to="/profile"
+              state={{
+                from: location,
+                message: "Please complete your profile before accessing the dashboard.",
+              }}
+              replace
+            />
+          )
+        }
+        return <Navigate to="/dashboard" replace />
+    }
   }
 
   return children
