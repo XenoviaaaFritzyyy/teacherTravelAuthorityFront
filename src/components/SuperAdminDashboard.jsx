@@ -510,10 +510,10 @@ const SuperAdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    window.location.reload();
-    navigate('/login');
-  };
+    localStorage.removeItem('accessToken')
+    navigate('/login')
+    window.location.reload()
+  }
 
   return (
     <div className="super-admin-dashboard">

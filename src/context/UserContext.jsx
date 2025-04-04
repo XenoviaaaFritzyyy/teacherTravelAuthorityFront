@@ -12,12 +12,16 @@ export const useUser = () => useContext(UserContext)
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [isProfileComplete, setIsProfileComplete] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Check if user is logged in and fetch profile data
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('accessToken')
-      if (!token) return
+      if (!token) {
+        setIsLoading(false)
+        return
+      }
 
       try {
         const response = await fetch('http://localhost:3000/users/me', {
@@ -31,15 +35,17 @@ export const UserProvider = ({ children }) => {
           const userData = await response.json()
           setUser(userData)
           setIsProfileComplete(checkProfileCompletion(userData))
-        } else {
-          // If token is invalid, clear it
+        } else if (response.status === 401) {
+          // Only remove token on unauthorized
           localStorage.removeItem('accessToken')
           setUser(null)
         }
+        // For other errors, keep the token and user state
       } catch (error) {
         console.error('Failed to fetch user data:', error)
-        localStorage.removeItem('accessToken')
-        setUser(null)
+        // Don't remove token on network errors
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -70,7 +76,7 @@ export const UserProvider = ({ children }) => {
   // Function to update user data
   const updateUser = async (userData) => {
     const token = localStorage.getItem('accessToken')
-    if (!token || !user?.id) return
+    if (!token || !user?.id) return false
 
     try {
       const response = await fetch(`http://localhost:3000/users/${user.id}`, {
@@ -87,6 +93,23 @@ export const UserProvider = ({ children }) => {
         setUser(updatedUser)
         setIsProfileComplete(checkProfileCompletion(updatedUser))
         return true
+      }
+
+      // If update fails, try to fetch current user data
+      if (response.status === 500) {
+        const userResponse = await fetch('http://localhost:3000/users/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (userResponse.ok) {
+          const currentUser = await userResponse.json()
+          setUser(currentUser)
+          setIsProfileComplete(checkProfileCompletion(currentUser))
+          return true
+        }
       }
       return false
     } catch (error) {
@@ -110,7 +133,9 @@ export const UserProvider = ({ children }) => {
         const { accessToken } = await response.json()
         localStorage.setItem('accessToken', accessToken)
 
-        // Fetch user data
+        // Add delay before fetching user data
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         const userResponse = await fetch('http://localhost:3000/users/me', {
           headers: {
             'Authorization': `Bearer ${accessToken}`,

@@ -319,10 +319,10 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    window.location.reload();
-    navigate('/login');
-  };
+    localStorage.removeItem('accessToken')
+    navigate('/login')
+    window.location.reload()
+  }
 
   // ===================== UI / Filtering ===================== //
 

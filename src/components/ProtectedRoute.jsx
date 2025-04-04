@@ -7,19 +7,20 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authCheckComplete, setAuthCheckComplete] = useState(false)
 
   useEffect(() => {
     const verifyAuth = async () => {
-      const token = localStorage.getItem('accessToken')
-      
-      if (!token) {
-        setIsLoading(false)
-        setIsAuthenticated(false)
-        return
-      }
-
       try {
-        // Fetch current user data
+        const token = localStorage.getItem('accessToken')
+        
+        if (!token) {
+          setIsLoading(false)
+          setIsAuthenticated(false)
+          setAuthCheckComplete(true)
+          return
+        }
+
         const response = await fetch('http://localhost:3000/users/me', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -29,36 +30,49 @@ const ProtectedRoute = ({ children }) => {
 
         if (response.ok) {
           const userData = await response.json()
-          updateUser(userData)
+          await updateUser(userData)
           setIsAuthenticated(true)
-          setIsLoading(false)
-        } else {
-          // If token is invalid, clear it
+        } else if (response.status === 401) {
           localStorage.removeItem('accessToken')
           setIsAuthenticated(false)
-          setIsLoading(false)
+        } else {
+          // For other errors, maintain current auth state
+          setIsAuthenticated(true)
         }
       } catch (error) {
         console.error('Auth verification failed:', error)
-        localStorage.removeItem('accessToken')
-        setIsAuthenticated(false)
+        // Don't remove token on network errors
+        setIsAuthenticated(!!localStorage.getItem('accessToken'))
+      } finally {
         setIsLoading(false)
+        setAuthCheckComplete(true)
       }
     }
 
     verifyAuth()
   }, [updateUser])
 
-  if (isLoading) {
-    return <div>Loading...</div>
+  // Show loading state only during initial auth check
+  if (!authCheckComplete) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Loading...</div>
+      </div>
+    )
   }
 
+  // Redirect to login only if explicitly not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  // Show loading state while waiting for user data
   if (!user) {
-    return <div>Loading user data...</div>
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Loading user data...</div>
+      </div>
+    )
   }
 
   // Define allowed routes for each role
@@ -69,18 +83,18 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Get allowed routes for current user's role
-  const allowedRoutes = roleRoutes[user.role] || []
+  const allowedRoutes = roleRoutes[user?.role] || []
 
   // If current path is not in allowed routes, redirect to appropriate dashboard
   if (!allowedRoutes.includes(location.pathname)) {
-    switch (user.role) {
+    switch (user?.role) {
       case 'Admin':
         return <Navigate to="/superadmin" replace />
       case 'AO Admin':
         return <Navigate to="/admin" replace />
       default:
         // For teachers, maintain the existing profile completion check
-        const isProfileComplete = user.role === 'Teacher' ? (
+        const isProfileComplete = user?.role === 'Teacher' ? (
           user.school_id &&
           user.school_name &&
           user.district &&
