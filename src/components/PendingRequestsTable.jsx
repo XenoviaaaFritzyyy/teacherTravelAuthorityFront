@@ -3,7 +3,7 @@ import axios from "axios";
 import { useUser } from "../context/UserContext";
 import "./PendingRequestsTable.css";
 
-const PendingRequestsTable = () => {
+const PendingRequestsTable = ({ onUnviewedCountChange }) => {
   const { user } = useUser();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +13,7 @@ const PendingRequestsTable = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [unviewedCount, setUnviewedCount] = useState(0);
 
   // Get auth headers for API requests
   const getAuthHeaders = useCallback(() => {
@@ -44,6 +45,13 @@ const PendingRequestsTable = () => {
         
         // Set the data directly - backend should already filter correctly
         setPendingRequests(response.data || []);
+        
+        // Count unviewed requests
+        const unviewed = (response.data || []).filter(req => !req.viewed).length;
+        setUnviewedCount(unviewed);
+        if (onUnviewedCountChange) {
+          onUnviewedCountChange(unviewed);
+        }
       } catch (err) {
         console.error("Error fetching pending requests:", err);
         
@@ -73,7 +81,7 @@ const PendingRequestsTable = () => {
       // This is a cleanup function that runs when the component unmounts
       // or when the dependencies change
     };
-  }, [refreshTrigger, getAuthHeaders]);
+  }, [refreshTrigger, getAuthHeaders, onUnviewedCountChange]);
 
   // Retry fetching data
   const handleRetry = () => {
@@ -88,9 +96,35 @@ const PendingRequestsTable = () => {
   };
 
   // Toggle expanded row
-  const toggleExpand = (id) => {
+  const toggleExpand = async (id) => {
     setExpandedId(expandedId === id ? null : id);
     setRemarkText(""); // Clear remark text when toggling
+
+    // Mark request as viewed when expanded
+    if (expandedId !== id) {
+      try {
+        await axios.patch(
+          `http://localhost:3000/travel-requests/${id}/viewed`,
+          {},
+          getAuthHeaders()
+        );
+        
+        // Update local state to mark as viewed
+        setPendingRequests(prevRequests =>
+          prevRequests.map(req =>
+            req.id === id ? { ...req, viewed: true } : req
+          )
+        );
+        
+        // Update unviewed count
+        setUnviewedCount(prev => Math.max(0, prev - 1));
+        if (onUnviewedCountChange) {
+          onUnviewedCountChange(Math.max(0, unviewedCount - 1));
+        }
+      } catch (error) {
+        console.error("Failed to mark request as viewed:", error);
+      }
+    }
   };
 
   // Handle remark text change
@@ -235,17 +269,15 @@ const PendingRequestsTable = () => {
 
   // Get role-specific title
   const getRoleTitle = () => {
-    if (!user) return "Pending Requests";
-    
-    switch (user.role) {
-      case "Principal":
-        return "Pending Requests from Teachers and ASDS";
-      case "PSDS":
-        return "Pending Requests from Principals";
-      case "ASDS":
-        return "Pending Requests from PSDS";
+    switch (user?.position) {
+      case "principal":
+        return "Validate Requests";
+      case "psds":
+        return "Validate Requests";
+      case "asds":
+        return "Validate Requests";
       default:
-        return "Pending Requests";
+        return "Validate Requests";
     }
   };
 
@@ -319,7 +351,9 @@ const PendingRequestsTable = () => {
 
   return (
     <div className="pending-requests-container">
-      <h2>{getRoleTitle()}</h2>
+      <div className="header-with-count">
+        <h2>{getRoleTitle()}</h2>
+      </div>
       
       <div className="filter-controls">
         <label htmlFor="statusFilter">Filter by Status:</label>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
+import axios from "axios"
 import "./Asds.css"
 import Navbar from "./Navbar"
 import RequestForm from "./RequestForm"
@@ -14,6 +15,7 @@ const Asds = () => {
     const { user } = useUser()
     const [showWelcome, setShowWelcome] = useState(false)
     const [activeTab, setActiveTab] = useState("request")
+    const [unviewedCount, setUnviewedCount] = useState(0)
 
     useEffect(() => {
         // Check if user exists and has required fields
@@ -31,6 +33,37 @@ const Asds = () => {
             sessionStorage.removeItem("profileJustCompleted")
         }
     }, [user, navigate])
+
+    // Fetch unviewed count
+    useEffect(() => {
+        const fetchUnviewedCount = async () => {
+            if (!user) return;
+            
+            try {
+                const token = localStorage.getItem("accessToken");
+                const response = await axios.get(
+                    "http://localhost:3000/travel-requests/pending",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                
+                const unviewed = (response.data || []).filter(req => !req.viewed).length;
+                setUnviewedCount(unviewed);
+            } catch (error) {
+                console.error("Error fetching unviewed count:", error);
+            }
+        };
+
+        fetchUnviewedCount();
+        
+        // Set up interval to check for new requests
+        const interval = setInterval(fetchUnviewedCount, 30000); // Check every 30 seconds
+        
+        return () => clearInterval(interval);
+    }, [user]);
 
     if (!user) {
         return null // or a loading spinner
@@ -59,14 +92,14 @@ const Asds = () => {
                             className={`tab-button ${activeTab === "validate" ? "active" : ""}`}
                             onClick={() => setActiveTab("validate")}
                         >
-                            Validate Requests
+                            Validate Requests {unviewedCount > 0 && <span className="unviewed-badge">{unviewedCount}</span>}
                         </button>
                     </div>
                     
                     {activeTab === "request" ? (
                         <RequestForm />
                     ) : (
-                        <PendingRequestsTable />
+                        <PendingRequestsTable onUnviewedCountChange={setUnviewedCount} />
                     )}
                 </div>
             </main>

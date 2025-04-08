@@ -321,6 +321,47 @@ button:disabled {
   border-bottom: none;
 }
 
+.title-with-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.request-count {
+  background-color: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 8px;
+  font-size: 0.9em;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-with-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.unviewed-count {
+  background-color: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 8px;
+  font-size: 0.9em;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
   .action-buttons {
     flex-direction: column;
