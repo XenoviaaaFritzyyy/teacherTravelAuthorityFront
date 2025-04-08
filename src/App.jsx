@@ -1,6 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import "./App.css"
 import AdminDashboard from "./components/AOadminDashboard"
+import AOadminOfficerDashboard from "./components/AOadminOfficerDashboard"
 import Asds from "./components/ASDS"
 import DashboardPage from "./components/DashboardPage"
 import LandingPage from "./components/LandingPage"
@@ -55,6 +56,14 @@ function App() {
             }
           />
           <Route
+            path="/aoadminofficer"
+            element={
+              <ProtectedRoute requiredRole="AO Admin Officer">
+                <AOadminOfficerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/superadmin"
             element={
               <ProtectedRoute requiredRole="Admin">
@@ -93,4 +102,3 @@ function App() {
 }
 
 export default App
-

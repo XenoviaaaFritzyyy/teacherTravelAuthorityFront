@@ -91,9 +91,9 @@ const SuperAdminDashboard = () => {
   const handleUserChange = (id, field, value) => {
     if (field === "role" && 
         (value === "AO Admin" || 
+         value === "AO Admin Officer" ||
          value === "PSDS" || 
-         value === "ASDS" || 
-         value === "SDS")) {
+         value === "ASDS")) {
       const user = users.find(u => u.id === id);
       setUserToUpdate({
         id,
@@ -154,7 +154,7 @@ const SuperAdminDashboard = () => {
     { value: "Principal", label: "Principal" },
     { value: "PSDS", label: "PSDS" },
     { value: "ASDS", label: "ASDS" },
-    { value: "SDS", label: "SDS" },
+    { value: "AO Admin Officer", label: "AO Admin Officer" },
     { value: "AO Admin", label: "AO Admin" },
     { value: "Admin", label: "Admin" }
   ];
@@ -348,13 +348,13 @@ const SuperAdminDashboard = () => {
                     </td>
                     <td>
                       {(editedUsers[user.id]?.role === "AO Admin" || 
+                        editedUsers[user.id]?.role === "AO Admin Officer" ||
                         editedUsers[user.id]?.role === "PSDS" || 
                         editedUsers[user.id]?.role === "ASDS" || 
-                        editedUsers[user.id]?.role === "SDS" || 
                         user.role === "AO Admin" ||
+                        user.role === "AO Admin Officer" ||
                         user.role === "PSDS" ||
-                        user.role === "ASDS" ||
-                        user.role === "SDS") ? (
+                        user.role === "ASDS") ? (
                         <select
                           value={editedUsers[user.id]?.position || user.position}
                           onChange={(e) => handleUserChange(user.id, "position", e.target.value)}

@@ -6,12 +6,14 @@ import { useUser } from "../context/UserContext"
 import "./Asds.css"
 import Navbar from "./Navbar"
 import RequestForm from "./RequestForm"
+import PendingRequestsTable from "./PendingRequestsTable"
 
 const Asds = () => {
     const location = useLocation()
     const navigate = useNavigate()
     const { user } = useUser()
     const [showWelcome, setShowWelcome] = useState(false)
+    const [activeTab, setActiveTab] = useState("request")
 
     useEffect(() => {
         // Check if user exists and has required fields
@@ -45,7 +47,27 @@ const Asds = () => {
                             <p>Your profile is complete. You can now submit travel requests.</p>
                         </div>
                     )}
-                    <RequestForm />
+                    
+                    <div className="dashboard-tabs">
+                        <button 
+                            className={`tab-button ${activeTab === "request" ? "active" : ""}`}
+                            onClick={() => setActiveTab("request")}
+                        >
+                            Submit Request
+                        </button>
+                        <button 
+                            className={`tab-button ${activeTab === "validate" ? "active" : ""}`}
+                            onClick={() => setActiveTab("validate")}
+                        >
+                            Validate Requests
+                        </button>
+                    </div>
+                    
+                    {activeTab === "request" ? (
+                        <RequestForm />
+                    ) : (
+                        <PendingRequestsTable />
+                    )}
                 </div>
             </main>
         </div>
@@ -53,5 +75,3 @@ const Asds = () => {
 }
 
 export default Asds
-
-

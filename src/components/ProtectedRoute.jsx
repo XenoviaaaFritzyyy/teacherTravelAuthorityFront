@@ -79,6 +79,7 @@ const ProtectedRoute = ({ children }) => {
   const roleRoutes = {
     'Admin': ['/superadmin'],
     'AO Admin': ['/admin', '/notifications'],
+    'AO Admin Officer': ['/aoadminofficer', '/profile', '/notifications'],
     'Teacher': ['/dashboard', '/profile', '/notifications'],
     'Principal': ['/principal', '/profile', '/notifications'],
     'PSDS': ['/psds', '/profile', '/notifications'],
@@ -95,6 +96,8 @@ const ProtectedRoute = ({ children }) => {
         return <Navigate to="/superadmin" replace />
       case 'AO Admin':
         return <Navigate to="/admin" replace />
+      case 'AO Admin Officer':
+        return <Navigate to="/aoadminofficer" replace />
       case 'Principal':
         return <Navigate to="/principal" replace />
       case 'PSDS':
