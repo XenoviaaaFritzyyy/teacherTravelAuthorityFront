@@ -106,23 +106,25 @@
   }
   
   .download-pdf-button {
-    background-color: #4CAF50;
+    background-color: #4caf50;
     color: white;
     border: none;
-    padding: 10px 20px;
     border-radius: 4px;
+    padding: 8px 16px;
+    margin-top: 15px;
     cursor: pointer;
-    font-size: 14px;
-    margin-top: 10px;
+    font-weight: 500;
     transition: background-color 0.3s;
   }
   
   .download-pdf-button:hover {
-    background-color: #45a049;
+    background-color: #388e3c;
   }
   
-  .download-pdf-button:active {
-    background-color: #3d8b40;
+  .download-pdf-button.receipt {
+    background-color: #2196f3;
   }
   
-  
+  .download-pdf-button.receipt:hover {
+    background-color: #1976d2;
+  }

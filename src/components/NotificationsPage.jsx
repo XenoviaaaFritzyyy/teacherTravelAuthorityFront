@@ -5,6 +5,7 @@ import axios from "axios"
 import { jsPDF } from 'jspdf'
 import Navbar from "./Navbar"
 import "./NotificationsPage.css"
+import { generateReceiptPDF, getStatusDisplayText } from "../utils/receiptGenerator"
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const formatDate = (dateString) => {
@@ -120,9 +121,39 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
     }
   };
 
+  const generateReceiptPDFFromNotification = async (notification) => {
+    try {
+      // Extract security code from the notification message
+      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
+      const securityCode = securityCodeMatch ? securityCodeMatch[1] : 'Unknown';
+      
+      // Fetch the travel request details using the security code
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const travelRequest = response.data;
+      
+      // Generate the receipt PDF
+      const doc = generateReceiptPDF(travelRequest, getStatusDisplayText);
+      
+      // Save the PDF
+      doc.save(`Travel_Receipt_${securityCode}.pdf`);
+    } catch (error) {
+      console.error('Failed to generate receipt PDF:', error);
+      alert('Failed to generate receipt PDF. Please try again.');
+    }
+  };
+
   const handleDownloadPDF = async (e) => {
     e.stopPropagation(); // Prevent notification from expanding when clicking download
     generatePDF(notification);
+  };
+
+  const handleDownloadReceiptPDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    generateReceiptPDFFromNotification(notification);
   };
 
   return (
@@ -139,6 +170,11 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           {notification.type === 'TRAVEL_REQUEST_APPROVED' && (
             <button className="download-pdf-button" onClick={handleDownloadPDF}>
               Download Travel Authority PDF
+            </button>
+          )}
+          {notification.type === 'TRAVEL_REQUEST_RECEIPT' && (
+            <button className="download-pdf-button receipt" onClick={handleDownloadReceiptPDF}>
+              Download Receipt PDF
             </button>
           )}
         </div>
