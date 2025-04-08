@@ -35,15 +35,15 @@ export const UserProvider = ({ children }) => {
           const userData = await response.json()
           setUser(userData)
           setIsProfileComplete(checkProfileCompletion(userData))
-        } else if (response.status === 401) {
-          // Only remove token on unauthorized
+        } else {
+          // Clear everything on any error
           localStorage.removeItem('accessToken')
           setUser(null)
         }
-        // For other errors, keep the token and user state
       } catch (error) {
         console.error('Failed to fetch user data:', error)
-        // Don't remove token on network errors
+        localStorage.removeItem('accessToken')
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
@@ -119,43 +119,11 @@ export const UserProvider = ({ children }) => {
   }
 
   // Function to handle login
-  const login = async (credentials) => {
-    try {
-      const response = await fetch('http://localhost:3000/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials)
-      })
-
-      if (response.ok) {
-        const { accessToken } = await response.json()
-        localStorage.setItem('accessToken', accessToken)
-
-        // Add delay before fetching user data
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        const userResponse = await fetch('http://localhost:3000/users/me', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json()
-          setUser(userData)
-          const isComplete = checkProfileCompletion(userData)
-          setIsProfileComplete(isComplete)
-          return { success: true, isComplete }
-        }
-      }
-      return { success: false, error: 'Invalid credentials' }
-    } catch (error) {
-      console.error('Login failed:', error)
-      return { success: false, error: 'Network error' }
-    }
+  const login = (userData) => {
+    setUser(userData)
+    const isComplete = checkProfileCompletion(userData)
+    setIsProfileComplete(isComplete)
+    return { success: true, isComplete }
   }
 
   // Function to handle logout
