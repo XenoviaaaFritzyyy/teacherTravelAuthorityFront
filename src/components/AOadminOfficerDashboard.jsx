@@ -155,7 +155,9 @@ const AOadminOfficerDashboard = () => {
 
   // Helper: Append user's position to a remark (e.g., "Remark text - System Administrator")
   const appendPositionToRemark = (remark) => {
-    return userPosition ? `${remark} - ${currentUser?.first_name} ${currentUser?.last_name} (${userPosition})` : remark;
+    // Get the department from the current user's position
+    const userDepartment = currentUser?.position || "Unknown Department";
+    return `${remark.trim()} (${userDepartment})`;
   };
 
   // Helper: Combine old and new remarks using a comma separator
@@ -166,6 +168,30 @@ const AOadminOfficerDashboard = () => {
       return `${oldRemarks}\n${newRemark}`;
     }
   };
+
+  // Helper function to check if all departments have added remarks
+  const checkAllDepartmentRemarks = (order) => {
+    if (!order.department || !order.remarks) return false;
+    
+    // Get array of departments
+    const departments = Array.isArray(order.department) 
+      ? order.department 
+      : order.department.split(',').map(d => d.trim());
+    
+    // Get array of remarks (each remark should end with the department name in parentheses)
+    const remarks = order.remarks.split('\n')
+      .map(remark => remark.trim())
+      .filter(remark => remark.length > 0);
+    
+    // Check if each department has a corresponding remark
+    return departments.every(dept => 
+      remarks.some(remark => {
+        // Look for remarks that end with the department name in parentheses
+        const match = remark.match(/.*\((.*?)\)$/);
+        return match && match[1].trim() === dept.trim();
+      })
+    );
+  }
 
   // ===================== Handlers ===================== //
 
@@ -182,7 +208,7 @@ const AOadminOfficerDashboard = () => {
     }
 
     // Format the new remark with name and position
-    const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+    const newRemarkWithPosition = appendPositionToRemark(remarkText);
     
     // Handle multiple remarks
     const updatedRemarks = order.remarks 
@@ -541,6 +567,8 @@ const AOadminOfficerDashboard = () => {
                             e.stopPropagation();
                             generateReceipt(order);
                           }}
+                          disabled={!checkAllDepartmentRemarks(order)}
+                          title={!checkAllDepartmentRemarks(order) ? "Waiting for remarks from all department heads" : ""}
                         >
                           Generate Receipt
                         </button>
