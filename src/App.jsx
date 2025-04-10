@@ -1,12 +1,15 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import "./App.css"
 import AdminDashboard from "./components/AOadminDashboard"
+import Asds from "./components/ASDS"
 import DashboardPage from "./components/DashboardPage"
 import LandingPage from "./components/LandingPage"
 import LoginPage from "./components/LoginPage"
 import NotificationsPage from "./components/NotificationsPage"
+import Principal from "./components/Principal"
 import ProfilePage from "./components/ProfilePage"
 import ProtectedRoute from "./components/ProtectedRoute"
+import Psds from "./components/PSDS"
 import SignUpPage from "./components/SignUpPage"
 import SuperAdminDashboard from "./components/SuperAdminDashboard"
 import { UserProvider } from "./context/UserContext"
@@ -56,6 +59,30 @@ function App() {
             element={
               <ProtectedRoute requiredRole="Admin">
                 <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/principal"
+            element={
+              <ProtectedRoute requiredRole="Principal">
+                <Principal />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/psds"
+            element={
+              <ProtectedRoute requiredRole="PSDS">
+                <Psds />
+              </ProtectedRoute>
+            }
+          />
+             <Route
+            path="/asds"
+            element={
+              <ProtectedRoute requiredRole="ASDS">
+                <Asds />
               </ProtectedRoute>
             }
           />

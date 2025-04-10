@@ -1,0 +1,37 @@
+.dashboard {
+    min-height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  .dashboard-main {
+    padding: 20px;
+  }
+  
+  .dashboard-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .welcome-message {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  .welcome-message h3 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+  }
+  
+  .welcome-message p {
+    margin: 0;
+    font-size: 16px;
+  }
+  
+  
+
+
