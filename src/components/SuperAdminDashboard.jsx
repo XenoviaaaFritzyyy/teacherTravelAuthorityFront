@@ -266,7 +266,11 @@ const SuperAdminDashboard = () => {
 
   // User management handlers
   const handleUserChange = (id, field, value) => {
-    if (field === "role" && value === "AO Admin") {
+    if (field === "role" && 
+        (value === "AO Admin" || 
+         value === "PSDS" || 
+         value === "ASDS" || 
+         value === "SDS")) {
       const user = users.find(u => u.id === id);
       setUserToUpdate({
         id,
@@ -277,7 +281,6 @@ const SuperAdminDashboard = () => {
       return;
     }
 
-    // For all other changes, update as normal
     setEditedUsers(prev => ({
       ...prev,
       [id]: {
@@ -342,6 +345,10 @@ const SuperAdminDashboard = () => {
   // Update the role options in the users table
   const roleOptions = [
     { value: "Teacher", label: "Teacher" },
+    { value: "Principal", label: "Principal" },
+    { value: "PSDS", label: "PSDS" },
+    { value: "ASDS", label: "ASDS" },
+    { value: "SDS", label: "SDS" },
     { value: "AO Admin", label: "AO Admin" },
     { value: "Admin", label: "Admin" }
   ];
@@ -514,6 +521,36 @@ const SuperAdminDashboard = () => {
     navigate('/login')
     window.location.reload()
   }
+
+  // Update the handleRoleBasedRedirect function in the UserContext
+  const handleRoleBasedRedirect = (userData) => {
+    switch (userData.role) {
+      case 'Admin':
+        navigate('/superadmin');
+        break;
+      case 'AO Admin':
+      case 'PSDS':
+      case 'ASDS':
+      case 'SDS':
+        navigate('/admin');
+        break;
+      case 'Principal':
+        navigate('/principal-dashboard');
+        break;
+      default:
+        const isProfileComplete = userData.school_id && 
+                                userData.school_name && 
+                                userData.district && 
+                                userData.position;
+        if (!isProfileComplete) {
+          navigate("/profile", {
+            state: { message: "Please complete your profile information." },
+          });
+        } else {
+          navigate("/dashboard");
+        }
+    }
+  };
 
   return (
     <div className="super-admin-dashboard">
@@ -805,7 +842,14 @@ const SuperAdminDashboard = () => {
                         />
                       </td>
                       <td>
-                        {(editedUsers[user.id]?.role === "AO Admin" || user.role === "AO Admin") ? (
+                        {(editedUsers[user.id]?.role === "AO Admin" || 
+                          editedUsers[user.id]?.role === "PSDS" || 
+                          editedUsers[user.id]?.role === "ASDS" || 
+                          editedUsers[user.id]?.role === "SDS" || 
+                          user.role === "AO Admin" ||
+                          user.role === "PSDS" ||
+                          user.role === "ASDS" ||
+                          user.role === "SDS") ? (
                           <select
                             value={editedUsers[user.id]?.position || user.position}
                             onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
@@ -816,11 +860,11 @@ const SuperAdminDashboard = () => {
                             ))}
                           </select>
                         ) : (
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.position || user.position}
-                          onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
-                        />
+                          <input
+                            type="text"
+                            value={editedUsers[user.id]?.position || user.position}
+                            onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
+                          />
                         )}
                       </td>
                       <td>

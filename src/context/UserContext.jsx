@@ -54,8 +54,10 @@ export const UserProvider = ({ children }) => {
 
   // Function to check if all required profile fields are filled
   const checkProfileCompletion = (userData) => {
-    if (!userData) return false
-    if (userData.role !== 'Teacher') return true // Only teachers need complete profiles
+    if (!userData) return false;
+    // Update to include new roles that don't need complete profiles
+    if (userData.role !== 'Teacher' && 
+        userData.role !== 'Principal') return true;
 
     const requiredFields = [
       "first_name",
@@ -68,9 +70,9 @@ export const UserProvider = ({ children }) => {
       "school_name",
       "district",
       "position"
-    ]
+    ];
 
-    return requiredFields.every(field => userData[field] && userData[field].trim() !== "")
+    return requiredFields.every(field => userData[field] && userData[field].trim() !== "");
   }
 
   // Function to update user data
