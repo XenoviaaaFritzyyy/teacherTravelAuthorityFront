@@ -41,13 +41,17 @@
   }
   
   .icon-button:hover {
-    background-color: rgba(255, 255, 255, 0.301);
+    background-color: rgba(255, 255, 255, 0.1);
   }
   
   .icon {
-    width: 35px;
-    height: 35px;
+    width: 24px;
+    height: 24px;
     color: white;
+  }
+  
+  .icon-button.active {
+    background-color: rgba(255, 255, 255, 0.2);
   }
   
   .admin-container {

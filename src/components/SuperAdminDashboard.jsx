@@ -1,7 +1,6 @@
 "use client"
 
 import axios from "axios"
-import { Bell, Edit, Table } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import "./SuperAdminDashboard.css"
@@ -50,23 +49,15 @@ const departments = [
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState("orders")
-  const [travelOrders, setTravelOrders] = useState([])
-  const [users, setUsers] = useState([])
-  const [expandedId, setExpandedId] = useState(null)
-  const [statusFilter, setStatusFilter] = useState("pending")
-  const [departmentFilter, setDepartmentFilter] = useState("All Departments")
-  const [showExpiredFilter, setShowExpiredFilter] = useState(false) // New state for expired filter
-  const [editedUsers, setEditedUsers] = useState({})
-  const [hasChanges, setHasChanges] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [remarkText, setRemarkText] = useState("")
-  const [showPositionModal, setShowPositionModal] = useState(false)
-  const [userToUpdate, setUserToUpdate] = useState(null)
+  const [users, setUsers] = useState([]);
+  const [editedUsers, setEditedUsers] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showPositionModal, setShowPositionModal] = useState(false);
+  const [userToUpdate, setUserToUpdate] = useState(null);
   const [currentUser, setCurrentUser] = useState(null)
-  const [isCheckingExpiredCodes, setIsCheckingExpiredCodes] = useState(false) // New state for loading indicator
 
-  // Fetch travel requests and users
+  // Fetch users
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -76,29 +67,6 @@ const SuperAdminDashboard = () => {
         // Add this to fetch current user
         const userRes = await axios.get("http://localhost:3000/users/me", { headers });
         setCurrentUser(userRes.data);
-
-        // Fetch travel requests
-        const ordersRes = await axios.get("http://localhost:3000/travel-requests", { headers });
-        const validatedOrders = ordersRes.data.filter(order => order.validationStatus === 'VALIDATED');
-        
-        const formatted = validatedOrders.map((order) => ({
-          id: order.id,
-          purpose: order.purpose || "",
-          status: order.status || "pending",
-          remarks: order.remarks || "",
-          startDate: order.startDate ? order.startDate.slice(0, 10) : "",
-          endDate: order.endDate ? order.endDate.slice(0, 10) : "",
-          teacherName: order.user
-            ? `${order.user.last_name}, ${order.user.first_name}`
-            : `UserID #Unknown`,
-          // Update department handling to match AOadminDashboard
-          department: Array.isArray(order.department) 
-            ? order.department.join(',') 
-            : (order.department || "").toString(),
-          securityCode: order.securityCode || "",
-          isCodeExpired: order.isCodeExpired || false, // Make sure to include isCodeExpired
-        }));
-        setTravelOrders(formatted);
 
         // Fetch users with complete data
         const usersRes = await axios.get("http://localhost:3000/users", { headers });
@@ -111,9 +79,6 @@ const SuperAdminDashboard = () => {
         }));
         
         setUsers(formattedUsers);
-        
-        // Automatically check for expired codes when the page loads
-        await checkExpiredCodes();
       } catch (error) {
         console.error("Failed to fetch data:", error);
       }
@@ -121,148 +86,6 @@ const SuperAdminDashboard = () => {
 
     fetchData();
   }, []);
-
-  // Separate function to check expired codes that can be called from useEffect
-  const checkExpiredCodes = async () => {
-    try {
-      setIsCheckingExpiredCodes(true);
-      const token = localStorage.getItem('accessToken');
-      await axios.post(
-        "http://localhost:3000/travel-requests/check-expired-codes",
-        {},
-        { headers: { 'Authorization': `Bearer ${token}` }}
-      );
-      
-      // Refresh travel orders after updating expired codes
-      const ordersRes = await axios.get("http://localhost:3000/travel-requests", 
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      
-      const validatedOrders = ordersRes.data.filter(order => order.validationStatus === 'VALIDATED');
-      
-      const formatted = validatedOrders.map((order) => ({
-        id: order.id,
-        purpose: order.purpose || "",
-        status: order.status || "pending",
-        remarks: order.remarks || "",
-        startDate: order.startDate ? order.startDate.slice(0, 10) : "",
-        endDate: order.endDate ? order.endDate.slice(0, 10) : "",
-        teacherName: order.user
-          ? `${order.user.last_name}, ${order.user.first_name}`
-          : `UserID #Unknown`,
-        department: Array.isArray(order.department) 
-          ? order.department.join(',') 
-          : (order.department || "").toString(),
-        securityCode: order.securityCode || "",
-        isCodeExpired: order.isCodeExpired || false,
-      }));
-      
-      setTravelOrders(formatted);
-      setIsCheckingExpiredCodes(false);
-    } catch (error) {
-      console.error("Failed to check expired codes:", error);
-      setIsCheckingExpiredCodes(false);
-    }
-  };
-
-  // Add handler to fix specific code expiration issues
-  // Removed this function
-
-  // Filter travel orders based on status
-  const filteredOrders = travelOrders.filter((order) => {
-    const matchesSearch =
-      order.teacherName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.id.toString().includes(searchQuery);
-
-    const matchesStatus =
-      statusFilter === "all" || order.status.toLowerCase() === statusFilter.toLowerCase();
-
-    // Updated department filtering to exactly match AOadminDashboard
-    const matchesDepartment =
-      departmentFilter === "All Departments" ||
-      (order.department && 
-       order.department.split(',').map(dep => dep.trim().toLowerCase())
-         .includes(departmentFilter.toLowerCase()));
-         
-    // Add expired filter
-    const matchesExpired = !showExpiredFilter || order.isCodeExpired;
-
-    return matchesSearch && matchesStatus && matchesDepartment && matchesExpired;
-  });
-
-  const handleOrderClick = (id) => {
-    if (expandedId === id) {
-      setExpandedId(null);
-      setRemarkText("");
-    } else {
-      setExpandedId(id);
-      setRemarkText("");
-    }
-  };
-
-  const handleAccept = async (id) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/status`,
-        { status: "accepted" },
-        { headers: { 'Authorization': `Bearer ${token}` }}
-      );
-
-      if (remarkText.trim()) {
-        await axios.patch(
-          `http://localhost:3000/travel-requests/${id}/remarks`,
-          { remarks: remarkText },
-          { headers: { 'Authorization': `Bearer ${token}` }}
-        );
-      }
-
-      setTravelOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === id
-            ? { ...order, status: "accepted", remarks: remarkText || order.remarks }
-            : order
-        )
-      );
-      setExpandedId(null);
-      alert('Travel request accepted successfully!');
-    } catch (error) {
-      console.error("Failed to accept travel request:", error);
-      alert('Failed to accept travel request. Please try again.');
-    }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/status`,
-        { status: "rejected" },
-        { headers: { 'Authorization': `Bearer ${token}` }}
-      );
-
-      if (remarkText.trim()) {
-        await axios.patch(
-          `http://localhost:3000/travel-requests/${id}/remarks`,
-          { remarks: remarkText },
-          { headers: { 'Authorization': `Bearer ${token}` }}
-        );
-      }
-
-      setTravelOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === id
-            ? { ...order, status: "rejected", remarks: remarkText || order.remarks }
-            : order
-        )
-      );
-      setExpandedId(null);
-      alert('Travel request rejected successfully!');
-    } catch (error) {
-      console.error("Failed to reject travel request:", error);
-      alert('Failed to reject travel request. Please try again.');
-    }
-  };
 
   // User management handlers
   const handleUserChange = (id, field, value) => {
@@ -318,23 +141,6 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  const getStatusTitle = () => {
-    if (showExpiredFilter) {
-      return "EXPIRED TRAVEL ORDERS";
-    }
-    
-    switch (statusFilter) {
-      case "pending":
-        return "PENDING"
-      case "accepted":
-        return "APPROVED"
-      case "rejected":
-        return "REJECTED"
-      default:
-        return "ALL TRAVEL ORDERS"
-    }
-  }
-
   // UNIVERSAL SEARCH: convert the user object to a single string and search it
   const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase()
@@ -353,11 +159,6 @@ const SuperAdminDashboard = () => {
     { value: "Admin", label: "Admin" }
   ];
 
-  // Update the status filter options
-  const handleStatusFilterChange = (e) => {
-    setStatusFilter(e.target.value);
-  };
-
   // Add this new handler for password reset
   const handleResetPassword = async (userId) => {
     try {
@@ -374,95 +175,6 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  // Add this new handler to check for expired codes
-  const handleCheckExpiredCodes = async () => {
-    try {
-      setIsCheckingExpiredCodes(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.post(
-        "http://localhost:3000/travel-requests/check-expired-codes",
-        {},
-        { headers: { 'Authorization': `Bearer ${token}` }}
-      );
-      
-      // Refresh travel orders after updating expired codes
-      const ordersRes = await axios.get("http://localhost:3000/travel-requests", 
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      
-      const validatedOrders = ordersRes.data.filter(order => order.validationStatus === 'VALIDATED');
-      
-      const formatted = validatedOrders.map((order) => ({
-        id: order.id,
-        purpose: order.purpose || "",
-        status: order.status || "pending",
-        remarks: order.remarks || "",
-        startDate: order.startDate ? order.startDate.slice(0, 10) : "",
-        endDate: order.endDate ? order.endDate.slice(0, 10) : "",
-        teacherName: order.user
-          ? `${order.user.last_name}, ${order.user.first_name}`
-          : `UserID #Unknown`,
-        department: Array.isArray(order.department) 
-          ? order.department.join(',') 
-          : (order.department || "").toString(),
-        securityCode: order.securityCode || "",
-        isCodeExpired: order.isCodeExpired || false,
-      }));
-      
-      setTravelOrders(formatted);
-      setIsCheckingExpiredCodes(false);
-      
-      alert(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`);
-    } catch (error) {
-      console.error("Failed to check expired codes:", error);
-      alert("Failed to check expired codes. Please try again.");
-      setIsCheckingExpiredCodes(false);
-    }
-  };
-
-  // Update the handleSubmitRemark function
-  const handleSubmitRemark = async (id) => {
-    if (!remarkText.trim()) {
-      alert("Please enter a remark before submitting.");
-      return;
-    }
-
-    const order = travelOrders.find((o) => o.id === id);
-    if (!order) {
-      alert("Could not find that travel order.");
-      return;
-    }
-
-    // Format the new remark with name and position
-    const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
-    
-    // Handle multiple remarks
-    const updatedRemarks = order.remarks 
-      ? `${order.remarks}\n${newRemarkWithPosition}`
-      : newRemarkWithPosition;
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/remarks`,
-        { remarks: updatedRemarks },
-        { headers: { Authorization: `Bearer ${token}` }}
-      );
-
-      setTravelOrders((prevOrders) =>
-        prevOrders.map((ord) =>
-          ord.id === id ? { ...ord, remarks: updatedRemarks } : ord
-        )
-      );
-      
-      alert("Remark submitted successfully!");
-      setRemarkText("");
-    } catch (error) {
-      console.error("Failed to submit remark:", error);
-      alert("Failed to submit remark. Please try again.");
-    }
-  };
-
   // Add position change modal component
   const PositionChangeModal = ({ show, onClose, onConfirm, currentPosition }) => {
     const [newPosition, setNewPosition] = useState(currentPosition);
@@ -474,7 +186,7 @@ const SuperAdminDashboard = () => {
       <div className="position-modal">
         <div className="position-modal-content">
           <h3>Update Position</h3>
-          <p>This user is being changed to an AO Admin role. Would you like to update their position?</p>
+          <p>This user's role is being changed. Would you like to update their position?</p>
           
           <div className="position-selection">
             <label>
@@ -522,35 +234,6 @@ const SuperAdminDashboard = () => {
     window.location.reload()
   }
 
-  // Update the handleRoleBasedRedirect function in the UserContext
-  const handleRoleBasedRedirect = (userData) => {
-    switch (userData.role) {
-      case 'Admin':
-        navigate('/superadmin');
-        break;
-      case 'AO Admin':
-      case 'PSDS':
-      case 'ASDS':
-      case 'SDS':
-        navigate('/admin');
-        break;
-      case 'Principal':
-        navigate('/principal-dashboard');
-        break;
-      default:
-        const isProfileComplete = userData.school_id && 
-                                userData.school_name && 
-                                userData.district && 
-                                userData.position;
-        if (!isProfileComplete) {
-          navigate("/profile", {
-            state: { message: "Please complete your profile information." },
-          });
-        } else {
-          navigate("/dashboard");
-        }
-    }
-  };
 
   return (
     <div className="super-admin-dashboard">
@@ -560,22 +243,7 @@ const SuperAdminDashboard = () => {
           <span className="admin-header-text">Travel Authority System</span>
         </div>
         <div className="admin-nav">
-          <button
-            className={`nav-button ${activeView === "users" ? "active" : ""}`}
-            onClick={() => setActiveView("users")}
-          >
-            <Table className="nav-icon" />
-          </button>
-          <button
-            className={`nav-button ${activeView === "orders" ? "active" : ""}`}
-            onClick={() => setActiveView("orders")}
-          >
-            <Edit className="nav-icon" />
-          </button>
           <div className="admin-actions">
-            <button className="icon-button">
-              <Bell className="icon" />
-            </button>
             <button className="logout-button" onClick={handleLogout}>
               Logout
             </button>
@@ -584,350 +252,186 @@ const SuperAdminDashboard = () => {
       </header>
 
       <div className="admin-container">
-        <div className="filter-container">
-          {activeView === "orders" ? (
-            // Orders filter
-            <div className="orders-filter-wrapper">
-              <div className="filter-group">
-                <label htmlFor="statusFilter">Status:</label>
-              <select
-                  id="statusFilter"
-                value={statusFilter}
-                onChange={handleStatusFilterChange}
-              >
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                  <option value="accepted">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              </div>
+        {/* Remove orders filter and keep only users search */}
+        <div className="users-search-wrapper">
+          <label htmlFor="search">Search:</label>
+          <input
+            id="search"
+            type="text"
+            placeholder="Search for anything"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-              <div className="filter-group">
-                <label htmlFor="departmentFilter">Department:</label>
-                <select
-                  id="departmentFilter"
-                  value={departmentFilter}
-                  onChange={(e) => setDepartmentFilter(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <option value="All Departments">All Departments</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="filter-group">
-                <label htmlFor="expiredFilter">
-                  <input
-                    id="expiredFilter"
-                    type="checkbox"
-                    checked={showExpiredFilter}
-                    onChange={(e) => setShowExpiredFilter(e.target.checked)}
-                  />
-                  Show Expired Only
-                </label>
-              </div>
-              
-              <div className="filter-group">
-                <button 
-                  className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
-                  onClick={handleCheckExpiredCodes}
-                  disabled={isCheckingExpiredCodes}
-                >
-                  {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Users search
-            <div className="users-search-wrapper">
-              <label htmlFor="search">Search:</label>
-              <input
-                id="search"
-                type="text"
-                placeholder="Search for anything"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        {/* Keep only the users table section */}
+        <div className="users-container">
+          <div className="users-table-wrapper">
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Password</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>School ID</th>
+                  <th>School Name</th>
+                  <th>District</th>
+                  <th>Email</th>
+                  <th>Position</th>
+                  <th>Contact No.</th>
+                  <th>Employee No.</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.id}</td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.username || user.username}
+                        onChange={(e) => handleUserChange(user.id, "username", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="password"
+                        value={editedUsers[user.id]?.password || "********"}
+                        onChange={(e) => handleUserChange(user.id, "password", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.first_name || user.first_name}
+                        onChange={(e) => handleUserChange(user.id, "first_name", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.last_name || user.last_name}
+                        onChange={(e) => handleUserChange(user.id, "last_name", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.school_id || user.school_id}
+                        onChange={(e) => handleUserChange(user.id, "school_id", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.school_name || user.school_name}
+                        onChange={(e) => handleUserChange(user.id, "school_name", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.district || user.district}
+                        onChange={(e) => handleUserChange(user.id, "district", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="email"
+                        value={editedUsers[user.id]?.email || user.email}
+                        onChange={(e) => handleUserChange(user.id, "email", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      {(editedUsers[user.id]?.role === "AO Admin" || 
+                        editedUsers[user.id]?.role === "PSDS" || 
+                        editedUsers[user.id]?.role === "ASDS" || 
+                        editedUsers[user.id]?.role === "SDS" || 
+                        user.role === "AO Admin" ||
+                        user.role === "PSDS" ||
+                        user.role === "ASDS" ||
+                        user.role === "SDS") ? (
+                        <select
+                          value={editedUsers[user.id]?.position || user.position}
+                          onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
+                        >
+                          <option value="">Select Department Position</option>
+                          {departments.map(dept => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={editedUsers[user.id]?.position || user.position}
+                          onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
+                        />
+                      )}
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.contact_no || user.contact_no}
+                        onChange={(e) => handleUserChange(user.id, "contact_no", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={editedUsers[user.id]?.employee_number || user.employee_number}
+                        onChange={(e) => handleUserChange(user.id, "employee_number", e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={editedUsers[user.id]?.role || user.role}
+                        onChange={(e) => handleUserChange(user.id, "role", e.target.value)}
+                      >
+                        {roleOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <button
+                        className="reset-password-button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (window.confirm('Are you sure you want to reset this user\'s password?')) {
+                            handleResetPassword(user.id);
+                          }
+                        }}
+                      >
+                        Reset Password
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="admin-note">
+            <p>
+              <strong>Note:</strong> If you wish to edit an information, make sure to highlight the particular data. 
+              The system is designed a certain way that information can't be easily forgotten and manipulated for security purposes.
+            </p>
+          </div>
+
+          {hasChanges && (
+            <div className="save-container">
+              <button className="save-button" onClick={handleSaveChanges}>
+                SAVE
+              </button>
             </div>
           )}
         </div>
-
-        {activeView === "orders" ? (
-          <div className="orders-container">
-            <h2>{getStatusTitle()}</h2>
-            <div className="orders-list">
-              {filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className={`order-item ${expandedId === order.id ? "expanded" : ""} ${order.status.toLowerCase()} ${order.isCodeExpired ? "expired" : ""}`}
-                  onClick={() => handleOrderClick(order.id)}
-                >
-                  <div className="order-header">
-                    <span className="teacher-name">{order.teacherName}</span>
-                    <span className="department-info">{order.department}</span>
-                    <span className="order-date">
-                      {order.startDate} to {order.endDate}
-                    </span>
-                  </div>
-
-                  {expandedId === order.id && (
-                    <div className="order-details">
-                      <div className="detail-row">
-                        <label>Purpose:</label>
-                        <p>{order.purpose}</p>
-                      </div>
-
-                      {order.status === "accepted" && (
-                        <div className="detail-row">
-                          <label>Security Code:</label>
-                          {order.isCodeExpired ? (
-                            <p className="security-code expired">
-                              {order.securityCode || "Code Expired"}
-                              <span className="expired-tag">(Expired)</span>
-                            </p>
-                          ) : (
-                            <p className="security-code">
-                              {order.securityCode}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="detail-row">
-                        <label>Travel Order</label>
-                      </div>
-
-                      <div className="remark-section">
-                        <label htmlFor={`remark-${order.id}`}>Remark:</label>
-                        {order.remarks && order.remarks.trim() && (
-                          <div className="existing-remarks">
-                            {order.remarks.split('\n').map((rem, idx) => (
-                              <p key={idx} className="remarks-line">
-                                {rem.trim()}
-                              </p>
-                            ))}
-                          </div>
-                        )}
-                        <textarea
-                          id={`remark-${order.id}`}
-                          value={remarkText}
-                          onChange={(e) => setRemarkText(e.target.value)}
-                          placeholder="Add your remark here..."
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <button
-                          className="submit-remark-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubmitRemark(order.id);
-                          }}
-                        >
-                          Submit Remark
-                        </button>
-                      </div>
-
-                      {/* Only show action buttons if status is not accepted */}
-                      {order.status !== "accepted" && (
-                      <div className="action-buttons">
-                        <button
-                            className="accept-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAccept(order.id);
-                            }}
-                          >
-                            ACCEPT
-                          </button>
-                          <button
-                            className="reject-button"
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(order.id);
-                          }}
-                        >
-                            REJECT
-                        </button>
-                      </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="users-container">
-            <div className="users-table-wrapper">
-              <table className="users-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Password</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>School ID</th>
-                    <th>School Name</th>
-                    <th>District</th>
-                    <th>Email</th>
-                    <th>Position</th>
-                    <th>Contact No.</th>
-                    <th>Employee No.</th>
-                    <th>Role</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.id}</td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.username || user.username}
-                          onChange={(e) => handleUserChange(user.id, "username", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="password"
-                          value={editedUsers[user.id]?.password || "********"}
-                          onChange={(e) => handleUserChange(user.id, "password", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.first_name || user.first_name}
-                          onChange={(e) => handleUserChange(user.id, "first_name", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.last_name || user.last_name}
-                          onChange={(e) => handleUserChange(user.id, "last_name", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.school_id || user.school_id}
-                          onChange={(e) => handleUserChange(user.id, "school_id", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.school_name || user.school_name}
-                          onChange={(e) => handleUserChange(user.id, "school_name", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.district || user.district}
-                          onChange={(e) => handleUserChange(user.id, "district", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="email"
-                          value={editedUsers[user.id]?.email || user.email}
-                          onChange={(e) => handleUserChange(user.id, "email", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        {(editedUsers[user.id]?.role === "AO Admin" || 
-                          editedUsers[user.id]?.role === "PSDS" || 
-                          editedUsers[user.id]?.role === "ASDS" || 
-                          editedUsers[user.id]?.role === "SDS" || 
-                          user.role === "AO Admin" ||
-                          user.role === "PSDS" ||
-                          user.role === "ASDS" ||
-                          user.role === "SDS") ? (
-                          <select
-                            value={editedUsers[user.id]?.position || user.position}
-                            onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
-                          >
-                            <option value="">Select Department Position</option>
-                            {departments.map(dept => (
-                              <option key={dept} value={dept}>{dept}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={editedUsers[user.id]?.position || user.position}
-                            onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
-                          />
-                        )}
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.contact_no || user.contact_no}
-                          onChange={(e) => handleUserChange(user.id, "contact_no", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          value={editedUsers[user.id]?.employee_number || user.employee_number}
-                          onChange={(e) => handleUserChange(user.id, "employee_number", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <select
-                          value={editedUsers[user.id]?.role || user.role}
-                          onChange={(e) => handleUserChange(user.id, "role", e.target.value)}
-                        >
-                          {roleOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <button
-                          className="reset-password-button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (window.confirm('Are you sure you want to reset this user\'s password?')) {
-                              handleResetPassword(user.id);
-                            }
-                          }}
-                        >
-                          Reset Password
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="admin-note">
-              <p>
-                <strong>Note:</strong> If you wish to edit an information, make sure to highlight the particular data. 
-                The system is designed a certain way that information can't be easily forgotten and manipulated for security purposes.
-              </p>
-            </div>
-
-            {hasChanges && (
-              <div className="save-container">
-                <button className="save-button" onClick={handleSaveChanges}>
-                  SAVE
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {showPositionModal && (

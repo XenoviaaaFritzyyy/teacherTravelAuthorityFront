@@ -1,10 +1,10 @@
 "use client"
 
-import axios from "axios"
-import { Bell } from "lucide-react"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import "./AOadminDashboard.css"
+import axios from "axios";
+import { Bell, Home } from "lucide-react"; // Add Home to the imports
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./AOadminDashboard.css";
 
 const departments = [
   "Accounting",
@@ -51,12 +51,13 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [travelOrders, setTravelOrders] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("PENDING");
   const [departmentFilter, setDepartmentFilter] = useState("All Departments");
   const [showExpiredFilter, setShowExpiredFilter] = useState(false); 
   const [remarkText, setRemarkText] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCheckingExpiredCodes, setIsCheckingExpiredCodes] = useState(false);
+  const [activeView, setActiveView] = useState("orders");
 
   // Current user's position state
   const [userPosition, setUserPosition] = useState("");
@@ -386,6 +387,9 @@ const AdminDashboard = () => {
                    <span className="admin-header-text">Travel Authority System</span>
         </div>
         <div className="admin-actions">
+          <button className="icon-button" onClick={() => setActiveView("orders")}>
+            <Home className="icon" />
+          </button>
           <button className="icon-button">
             <Bell className="icon" />
           </button>
@@ -460,116 +464,110 @@ const AdminDashboard = () => {
         <div className="orders-container">
           <h2>{getStatusTitle()}</h2>
           <div className="orders-list">
-            {filteredOrders.length > 0 ? (
-              filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className={`order-item ${
-                    expandedId === order.id ? "expanded" : ""
-                  } ${order.validationStatus.toLowerCase()}`}
-                  onClick={() => handleOrderClick(order.id)}
-                >
-                  <div className="order-header">
-                    <span className="teacher-name">{order.teacherName}</span>
-                    <span className="department-info">{order.department}</span>
-                    <span className="order-date">
-                      {order.startDate} to {order.endDate}
-                    </span>
-                  </div>
-                  {expandedId === order.id && (
-                    <div className="order-details">
-                      <div className="detail-row">
-                        <label>Purpose:</label>
-                        <p>{order.purpose}</p>
-                      </div>
+            {filteredOrders.map((order) => (
+              <div
+                key={order.id}
+                className={`order-item ${
+                  expandedId === order.id ? "expanded" : ""
+                } ${order.validationStatus.toLowerCase()}`}
+                onClick={() => handleOrderClick(order.id)}
+              >
+                <div className="order-header">
+                  <span className="teacher-name">{order.teacherName}</span>
+                  <span className="department-info">{order.department}</span>
+                  <span className="order-date">
+                    {order.startDate} to {order.endDate}
+                  </span>
+                </div>
+                {expandedId === order.id && (
+                  <div className="order-details">
+                    <div className="detail-row">
+                      <label>Purpose:</label>
+                      <p>{order.purpose}</p>
+                    </div>
 
-                      {/* Display security code for accepted travel requests */}
-                      {order.status === "accepted" && (
-                        <div className="detail-row">
-                          <label>Security Code:</label>
-                          {order.isCodeExpired ? (
-                            <p className="security-code expired">
-                              {order.securityCode || "Code Expired"}
-                              <span className="expired-tag">(Expired)</span>
-                            </p>
-                          ) : (
-                            <p className="security-code">
-                              {order.securityCode}
-                            </p>
-                          )}
+                    {/* Display security code for accepted travel requests */}
+                    {order.status === "accepted" && (
+                      <div className="detail-row">
+                        <label>Security Code:</label>
+                        {order.isCodeExpired ? (
+                          <p className="security-code expired">
+                            {order.securityCode || "Code Expired"}
+                            <span className="expired-tag">(Expired)</span>
+                          </p>
+                        ) : (
+                          <p className="security-code">
+                            {order.securityCode}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {order.remarks && order.remarks.trim() && (
+                      <div className="existing-remarks">
+                        <label>Existing Remarks:</label>
+                        {order.remarks.split('\n').map((rem, idx) => (
+                          <p key={idx} className="remarks-line">
+                            {rem.trim()}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Only show remark section and action buttons if user has permission */}
+                    {hasPermissionForOrder(order) ? (
+                      <>
+                        <div className="remark-section">
+                          <label htmlFor={`remark-${order.id}`}>New Remark:</label>
+                          <textarea
+                            id={`remark-${order.id}`}
+                            value={remarkText}
+                            onChange={handleRemarkChange}
+                            placeholder="Add your remark here..."
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            className="submit-remark-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSubmitRemark(order.id);
+                            }}
+                          >
+                            Submit Remark
+                          </button>
                         </div>
-                      )}
-                      
-                      {order.remarks && order.remarks.trim() && (
-                        <div className="existing-remarks">
-                          <label>Existing Remarks:</label>
-                          {order.remarks.split('\n').map((rem, idx) => (
-                            <p key={idx} className="remarks-line">
-                              {rem.trim()}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Only show remark section and action buttons if user has permission */}
-                      {hasPermissionForOrder(order) ? (
-                        <>
-                          <div className="remark-section">
-                            <label htmlFor={`remark-${order.id}`}>New Remark:</label>
-                            <textarea
-                              id={`remark-${order.id}`}
-                              value={remarkText}
-                              onChange={handleRemarkChange}
-                              placeholder="Add your remark here..."
-                              onClick={(e) => e.stopPropagation()}
-                            />
+                        {order.validationStatus === "PENDING" && (
+                          <div className="action-buttons">
                             <button
-                              className="submit-remark-button"
+                              className="validate-button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleSubmitRemark(order.id);
+                                handleValidate(order.id);
                               }}
                             >
-                              Submit Remark
+                              VALIDATE
+                            </button>
+                            <button
+                              className="reject-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(order.id);
+                              }}
+                            >
+                              REJECT
                             </button>
                           </div>
-                          {order.validationStatus === "PENDING" && (
-                            <div className="action-buttons">
-                              <button
-                                className="validate-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleValidate(order.id);
-                                }}
-                              >
-                                VALIDATE
-                              </button>
-                              <button
-                                className="reject-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReject(order.id);
-                                }}
-                              >
-                                REJECT
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="no-permission-notice">
-                          <p>You don't have permission to add remarks or take actions on this request.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="no-orders">
-                <p>No travel orders found matching your criteria.</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="no-permission-notice">
+                        <p>You don't have permission to add remarks or take actions on this request.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>

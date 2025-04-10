@@ -78,8 +78,11 @@ const ProtectedRoute = ({ children }) => {
   // Define allowed routes for each role
   const roleRoutes = {
     'Admin': ['/superadmin'],
-    'AO Admin': ['/admin'],
-    'Teacher': ['/dashboard', '/profile', '/notifications']
+    'AO Admin': ['/admin', '/notifications'],
+    'Teacher': ['/dashboard', '/profile', '/notifications'],
+    'Principal': ['/principal', '/profile', '/notifications'],
+    'PSDS': ['/psds', '/profile', '/notifications'],
+    'ASDS': ['/asds', '/profile', '/notifications']
   }
 
   // Get allowed routes for current user's role
@@ -92,6 +95,12 @@ const ProtectedRoute = ({ children }) => {
         return <Navigate to="/superadmin" replace />
       case 'AO Admin':
         return <Navigate to="/admin" replace />
+      case 'Principal':
+        return <Navigate to="/principal" replace />
+      case 'PSDS':
+        return <Navigate to="/psds" replace />
+      case 'ASDS':
+        return <Navigate to="/asds" replace />
       default:
         // For teachers, maintain the existing profile completion check
         const isProfileComplete = user?.role === 'Teacher' ? (

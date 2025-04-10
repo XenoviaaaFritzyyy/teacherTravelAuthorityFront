@@ -16,7 +16,7 @@
   }
 
   .admin-header-text {
-    font-size: 20px;
+        font-size: 20px;
     color: #ffffff;
     text-decoration: none; /* Ensure no underline */
     margin-left: 10px; /* Space between logo and text */
