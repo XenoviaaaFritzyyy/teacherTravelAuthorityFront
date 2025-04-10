@@ -1,10 +1,10 @@
 "use client"
 
+import axios from "axios"
 import { Bell, Home, User } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
-import axios from "axios"
 import "./Navbar.css"
 
 const Navbar = () => {
@@ -66,7 +66,8 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/dashboard" className="logo">
-          <img src="/depedLogonav.png?height=40&width=100" alt="DepEd Logo" className="deped-logo" />
+          <img src="/depedlogo.png?height=10&width=10" alt="DepEd Logo" className="deped-logo" />
+          <span className="header-text">Travel Authority System</span>
         </Link>
 
         <div className="nav-actions">

@@ -1,6 +1,6 @@
 .navbar {
-    background-color: #00b4d8;
-    padding: 5px 0; /* Reduced padding to decrease the height */
+    background-color: #0a1172;
+    padding: 0; /* Reduced padding to decrease the height */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: space-between;
@@ -8,8 +8,7 @@
   }
   
   .navbar-container {
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 100%;
     padding: 0 20px;
     display: flex;
     justify-content: space-between;
@@ -18,12 +17,24 @@
   }
   
   .logo {
-    margin-right: auto; /* This pushes everything else to the right */
+    display: flex;
+    align-items: center;
+    text-decoration: none; /* Remove underline */
+    margin-left: 30px; /* Add left margin to push logo to left corner */
+  }
+
+  .header-text{
+    font-size: 20px;
+    color: #ffffff;
+    text-decoration: none; /* Ensure no underline */
+    margin-left: 10px; /* Space between logo and text */
   }
   
   .deped-logo {
-    height: 200px;
-    width: 200px;
+    height: 100px;
+    width: 60px;
+    margin-right: 10px;
+    margin-left: 0;
   }
   
   .nav-actions {
@@ -31,6 +42,7 @@
     gap: 20px;
     align-items: center;
     margin-left: auto; /* This ensures it stays on the right */
+    margin-right: 30px; /* Add right margin to push icons to right corner */
   }
   
   .notification-container,
@@ -177,5 +189,4 @@
     padding: 0 5px;
     font-weight: bold;
   }
-  
-  
+

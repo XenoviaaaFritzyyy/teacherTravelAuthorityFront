@@ -379,10 +379,11 @@ const AdminDashboard = () => {
       <header className="admin-header">
         <div className="logo">
           <img
-            src="/depedLogonav.png?height=40&width=100"
+            src="/depedlogo.png?height=40&width=100"
             alt="DepEd Logo"
             className="deped-logo"
           />
+                   <span className="admin-header-text">Travel Authority System</span>
         </div>
         <div className="admin-actions">
           <button className="icon-button">
