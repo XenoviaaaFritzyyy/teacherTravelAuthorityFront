@@ -11,6 +11,7 @@ import Principal from "./components/Principal"
 import ProfilePage from "./components/ProfilePage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Psds from "./components/PSDS"
+import Sds from "./components/Sds"
 import SignUpPage from "./components/SignUpPage"
 import SuperAdminDashboard from "./components/SuperAdminDashboard"
 import { UserProvider } from "./context/UserContext"
@@ -92,6 +93,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="ASDS">
                 <Asds />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sds"
+            element={
+              <ProtectedRoute requiredRole="SDS">
+                <Sds />
               </ProtectedRoute>
             }
           />

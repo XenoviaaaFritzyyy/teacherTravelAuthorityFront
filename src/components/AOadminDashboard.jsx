@@ -1,7 +1,7 @@
 "use client"
 
 import axios from "axios";
-import { Bell, Home } from "lucide-react"; // Add Home to the imports
+import { Bell, Home, RefreshCw } from "lucide-react"; 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AOadminDashboard.css";
@@ -471,17 +471,16 @@ const AdminDashboard = () => {
               Show Expired Only
             </label>
           </div>
-          {currentUser && currentUser.role === 'admin' && (
-            <div className="filter-container">
-              <button 
-                className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
-                onClick={handleCheckExpiredCodes}
-                disabled={isCheckingExpiredCodes}
-              >
-                {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
-              </button>
-            </div>
-          )}
+          <div className="filter-container">
+            <button 
+              className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
+              onClick={handleCheckExpiredCodes}
+              disabled={isCheckingExpiredCodes}
+            >
+              <RefreshCw className="refresh-icon" size={16} />
+              {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
+            </button>
+          </div>
         </div>
         <div className="orders-container">
           <h2>{getStatusTitle()}</h2>

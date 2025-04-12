@@ -11,12 +11,14 @@ const RequestForm = () => {
     department: [], 
     startDate: "",
     endDate: "",
+    otherDepartment: "", // New field for custom "Others" input
   })
 
   const [minDate, setMinDate] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showOtherInput, setShowOtherInput] = useState(false) // State to control visibility of "Others" input field
 
   // Department options for react-select: label, value
   const departmentOptions = [
@@ -60,6 +62,7 @@ const RequestForm = () => {
     { label: "Super User", value: "Super User" },
     { label: "Supply", value: "Supply" },
     { label: "Unassigned User", value: "Unassigned User" },
+    { label: "Others", value: "Others" }, // Added "Others" option
   ]
 
   // On initial mount, calculate today's date for the minDate
@@ -91,6 +94,13 @@ const RequestForm = () => {
     const departmentsArray = selectedOptions ? selectedOptions.map((opt) => opt.value) : []
     setFormData((prev) => ({ ...prev, department: departmentsArray }))
 
+    if (departmentsArray.includes("Others")) {
+      setShowOtherInput(true)
+    } else {
+      setShowOtherInput(false)
+      setFormData((prev) => ({ ...prev, otherDepartment: "" }))
+    }
+
     if (errors.department) {
       setErrors((prev) => ({ ...prev, department: null }))
     }
@@ -104,9 +114,17 @@ const RequestForm = () => {
       tempErrors.purpose = "Purpose is required"
     }
 
-    // Must select at least 2 departments
-    if (!formData.department || formData.department.length < 2) {
+    // Check if department is empty
+    if (!formData.department || formData.department.length === 0) {
+      tempErrors.department = "Please select at least one department"
+    } 
+    // If "Others" is not selected, require at least 2 departments
+    else if (!formData.department.includes("Others") && formData.department.length < 2) {
       tempErrors.department = "Please select at least two departments"
+    }
+
+    if (formData.department.includes("Others") && !formData.otherDepartment.trim()) {
+      tempErrors.otherDepartment = "Please specify the other department"
     }
 
     if (!formData.startDate) {
@@ -137,7 +155,7 @@ const RequestForm = () => {
         const requestData = {
           purpose: formData.purpose.trim(),
           // The array of department strings
-          department: formData.department, 
+          department: formData.department.includes("Others") ? [...formData.department.filter(department => department !== "Others"), formData.otherDepartment] : formData.department,
           startDate: new Date(formData.startDate).toISOString().split("T")[0],
           endDate: new Date(formData.endDate).toISOString().split("T")[0],
         }
@@ -168,6 +186,7 @@ const RequestForm = () => {
           department: [],
           startDate: "",
           endDate: "",
+          otherDepartment: "",
         })
 
         setTimeout(() => {
@@ -235,6 +254,24 @@ const RequestForm = () => {
             )}
           </div>
 
+          {showOtherInput && (
+            <div className="form-group">
+              <label htmlFor="otherDepartment">Other Department:</label>
+              <input
+                type="text"
+                id="otherDepartment"
+                name="otherDepartment"
+                value={formData.otherDepartment}
+                onChange={handleChange}
+                className={errors.otherDepartment ? "error" : ""}
+                disabled={isSubmitting}
+              />
+              {errors.otherDepartment && (
+                <span className="error-message">{errors.otherDepartment}</span>
+              )}
+            </div>
+          )}
+
           <div className="date-container">
             <div className="form-group">
               <label htmlFor="startDate">Start Date:</label>
@@ -280,7 +317,9 @@ const RequestForm = () => {
               className="submit-button"
               disabled={
                 isSubmitting ||
-                formData.department.length < 1  // Disable if there are no departments selected
+                (formData.department.includes("Others") 
+                  ? formData.department.length < 1 || !formData.otherDepartment.trim()
+                  : formData.department.length < 2)  
               }
             >
               {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
