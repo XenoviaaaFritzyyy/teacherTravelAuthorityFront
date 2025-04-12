@@ -477,3 +477,43 @@
     display: none;
   }
 }
+
+.check-expired-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #0077b6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.check-expired-button:hover {
+  background-color: #023e8a;
+}
+
+.check-expired-button:active {
+  transform: scale(0.98);
+}
+
+.check-expired-button.loading {
+  background-color: #90e0ef;
+  cursor: not-allowed;
+}
+
+.check-expired-button .refresh-icon {
+  animation: none;
+}
+
+.check-expired-button.loading .refresh-icon {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

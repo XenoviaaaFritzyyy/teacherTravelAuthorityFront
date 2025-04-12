@@ -1,7 +1,7 @@
 "use client"
 
 import axios from "axios";
-import { Bell, Home, Printer } from "lucide-react";
+import { Bell, Home, Printer, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AOadminOfficerDashboard.css";
@@ -398,6 +398,56 @@ const AOadminOfficerDashboard = () => {
     );
   };
 
+  // Add the handler function for checking expired codes
+  const handleCheckExpiredCodes = async () => {
+    try {
+      setIsCheckingExpiredCodes(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.post(
+        "http://localhost:3000/travel-requests/check-expired-codes",
+        {},
+        { headers: { 'Authorization': `Bearer ${token}` }}
+      );
+      
+      // Refresh travel orders after updating expired codes
+      const res = await axios.get("http://localhost:3000/travel-requests", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      console.log("Travel requests data:", res.data);
+
+      const formatted = res.data.map((order) => ({
+        id: order.id,
+        purpose: order.purpose || "",
+        status: order.status || "pending",
+        validationStatus: order.validationStatus || "PENDING",
+        remarks: order.remarks || "",
+        startDate: order.startDate ? order.startDate.slice(0, 10) : "",
+        endDate: order.endDate ? order.endDate.slice(0, 10) : "",
+        teacherName: order.user
+          ? `${order.user.last_name}, ${order.user.first_name}`
+          : `UserID #${order.userID || "Unknown"}`,
+        teacherPosition: order.user ? order.user.position || "" : "",
+        teacherSchool: order.user ? order.user.school_name || "" : "",
+        department: Array.isArray(order.department) 
+          ? order.department.join(',') 
+          : (order.department || "").toString(),
+        securityCode: order.securityCode || "",
+        isCodeExpired: order.isCodeExpired || false,
+        user: order.user || {}
+      }));
+
+      setTravelOrders(formatted);
+      setIsCheckingExpiredCodes(false);
+      
+      alert(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`);
+    } catch (error) {
+      console.error("Failed to check expired codes:", error);
+      alert("Failed to check expired codes. Please try again.");
+      setIsCheckingExpiredCodes(false);
+    }
+  };
+
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
@@ -471,6 +521,16 @@ const AOadminOfficerDashboard = () => {
               />
               Show Expired Only
             </label>
+          </div>
+          <div className="filter-container">
+            <button 
+              className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
+              onClick={handleCheckExpiredCodes}
+              disabled={isCheckingExpiredCodes}
+            >
+              <RefreshCw className="refresh-icon" size={16} />
+              {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
+            </button>
           </div>
         </div>
         <div className="orders-container">
