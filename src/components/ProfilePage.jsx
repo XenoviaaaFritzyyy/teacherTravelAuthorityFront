@@ -33,6 +33,7 @@ const ProfilePage = () => {
   })
 
   const [errors, setErrors] = useState({})
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   // Check for message in location state
   useEffect(() => {
@@ -138,8 +139,29 @@ const ProfilePage = () => {
 
   const handleConfirm = async () => {
     if (validateForm()) {
-        setIsLoading(true)
-        try {
+        // For new accounts, show a confirmation dialog to double check details
+        if (!isProfileComplete) {
+            setShowConfirmDialog(true)
+            return
+        }
+        
+        // If already confirmed or profile is complete, proceed with update
+        await updateProfile()
+    }
+  }
+
+  const confirmProfileUpdate = () => {
+    setShowConfirmDialog(false)
+    updateProfile()
+  }
+
+  const cancelProfileUpdate = () => {
+    setShowConfirmDialog(false)
+  }
+
+  const updateProfile = async () => {
+    setIsLoading(true)
+    try {
             const token = localStorage.getItem('accessToken')
             
             // If profile is complete, only update personal info
@@ -182,12 +204,51 @@ const ProfilePage = () => {
             setIsLoading(false)
         }
     }
-}
 
   return (
     <div className="profile-page">
       <Navbar />
       <div className="profile-container">
+        {/* Confirmation Dialog */}
+        {showConfirmDialog && (
+          <div className="confirmation-overlay">
+            <div className="confirmation-dialog">
+              <div className="confirmation-header">
+                <h3>Confirm Your Details</h3>
+              </div>
+              <div className="confirmation-content">
+                <p className="confirmation-warning">
+                  Please verify that all information is correct. Professional information cannot be changed after confirmation.
+                </p>
+                
+                <div className="confirmation-section">
+                  <h4>Personal Information</h4>
+                  <div className="confirmation-details">
+                    <p><strong>Name:</strong> {personalInfo.first_name} {personalInfo.last_name}</p>
+                    <p><strong>Email:</strong> {personalInfo.email}</p>
+                    <p><strong>Username:</strong> {personalInfo.username}</p>
+                    <p><strong>Contact:</strong> {personalInfo.contact_no}</p>
+                  </div>
+                </div>
+                
+                <div className="confirmation-section">
+                  <h4>Professional Information</h4>
+                  <div className="confirmation-details">
+                    <p><strong>Employee Number:</strong> {professionalInfo.employee_number}</p>
+                    <p><strong>School ID:</strong> {professionalInfo.school_id}</p>
+                    <p><strong>School Name:</strong> {professionalInfo.school_name}</p>
+                    <p><strong>District:</strong> {professionalInfo.district}</p>
+                    <p><strong>Position:</strong> {professionalInfo.position}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="confirmation-actions">
+                <button className="cancel-button" onClick={cancelProfileUpdate}>Cancel</button>
+                <button className="confirm-button" onClick={confirmProfileUpdate}>Confirm</button>
+              </div>
+            </div>
+          </div>
+        )}
         {message && (
           <div className={`message ${message.includes("successfully") ? "success" : "warning"}`}>
             {message}
@@ -351,4 +412,4 @@ const ProfilePage = () => {
   )
 }
 
-export default ProfilePage
+export default ProfilePage;
