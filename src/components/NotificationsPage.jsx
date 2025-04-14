@@ -187,23 +187,41 @@ const NotificationsPage = () => {
   const [expandedId, setExpandedId] = useState(null)
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  const fetchNotifications = async (pageNum = 1, append = false) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get('http://localhost:3000/notifications', {
+        params: {
+          page: pageNum,
+          limit: 10
+        },
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const { notifications: fetchedNotifications, total } = response.data;
+      
+      if (append) {
+        setNotifications(prev => [...prev, ...fetchedNotifications]);
+      } else {
+        setNotifications(fetchedNotifications);
+      }
+      
+      // Check if we've loaded all notifications
+      setHasMore(notifications.length + fetchedNotifications.length < total);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:3000/notifications', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setNotifications(response.data);
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotifications();
+    fetchNotifications(1, false);
   }, []);
 
   const handleNotificationClick = async (id) => {
@@ -229,6 +247,15 @@ const NotificationsPage = () => {
       }
     }
   };
+  
+  const handleLoadMore = () => {
+    if (!hasMore || loadingMore) return;
+    
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchNotifications(nextPage, true);
+  };
 
   if (loading) {
     return (
@@ -253,14 +280,28 @@ const NotificationsPage = () => {
             {notifications.length === 0 ? (
               <p className="no-notifications">No notifications to display</p>
             ) : (
-              notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  isExpanded={expandedId === notification.id}
-                  onClick={() => handleNotificationClick(notification.id)}
-                />
-              ))
+              <>
+                {notifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    isExpanded={expandedId === notification.id}
+                    onClick={() => handleNotificationClick(notification.id)}
+                  />
+                ))}
+                
+                {hasMore && (
+                  <div className="load-more-container">
+                    <button 
+                      className="load-more-button" 
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? 'Loading...' : 'Load More'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
