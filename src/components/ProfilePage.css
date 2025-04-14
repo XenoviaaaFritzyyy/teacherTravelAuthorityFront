@@ -64,8 +64,16 @@
   }
   
   .form-group input:disabled {
-    background-color: #f8f8f8;
+    background-color: #f0f0f0;
     cursor: not-allowed;
+    color: #666;
+    border-color: #ddd;
+  }
+  
+  .form-group input.uneditable {
+    background-color: #e8e8e8;
+    border-color: #ccc;
+    color: #555;
   }
   
   .form-group input:focus {

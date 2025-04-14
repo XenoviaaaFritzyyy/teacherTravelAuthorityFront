@@ -230,8 +230,8 @@ const ProfilePage = () => {
                 placeholder="Email"
                 value={personalInfo.email}
                 onChange={handlePersonalInfoChange}
-                disabled={!isEditing || redirecting}
-                className={errors.email ? "error" : ""}
+                disabled={true} /* Email is always uneditable */
+                className={`uneditable ${errors.email ? "error" : ""}`}
               />
               {errors.email && <span className="error-message">{errors.email}</span>}
             </div>
@@ -276,7 +276,7 @@ const ProfilePage = () => {
                 value={professionalInfo.employee_number}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}
-                className={errors.employee_number ? "error" : ""}
+                className={`${isProfileComplete ? "uneditable" : ""} ${errors.employee_number ? "error" : ""}`}
               />
               {errors.employee_number && <span className="error-message">{errors.employee_number}</span>}
             </div>
@@ -288,7 +288,7 @@ const ProfilePage = () => {
                 value={professionalInfo.school_id}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}
-                className={errors.school_id ? "error" : ""}
+                className={`${isProfileComplete ? "uneditable" : ""} ${errors.school_id ? "error" : ""}`}
               />
               {errors.school_id && <span className="error-message">{errors.school_id}</span>}
             </div>
@@ -300,7 +300,7 @@ const ProfilePage = () => {
                 value={professionalInfo.school_name}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}
-                className={errors.school_name ? "error" : ""}
+                className={`${isProfileComplete ? "uneditable" : ""} ${errors.school_name ? "error" : ""}`}
               />
               {errors.school_name && <span className="error-message">{errors.school_name}</span>}
             </div>
@@ -312,7 +312,7 @@ const ProfilePage = () => {
                 value={professionalInfo.district}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}
-                className={errors.district ? "error" : ""}
+                className={`${isProfileComplete ? "uneditable" : ""} ${errors.district ? "error" : ""}`}
               />
               {errors.district && <span className="error-message">{errors.district}</span>}
             </div>
@@ -324,7 +324,7 @@ const ProfilePage = () => {
                 value={professionalInfo.position}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}
-                className={errors.position ? "error" : ""}
+                className={`${isProfileComplete ? "uneditable" : ""} ${errors.position ? "error" : ""}`}
               />
               {errors.position && <span className="error-message">{errors.position}</span>}
             </div>
