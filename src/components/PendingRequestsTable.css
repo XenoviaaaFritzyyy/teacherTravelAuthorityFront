@@ -160,6 +160,28 @@
   gap: 10px;
   margin-top: 10px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Status message styling */
+.status-message {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-block;
+}
+
+.status-message.validated {
+  background-color: #e6f7e6;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.status-message.rejected {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
 }
 
 .submit-remark-button,

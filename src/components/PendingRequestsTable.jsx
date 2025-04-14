@@ -473,25 +473,37 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
                               >
                                 Submit Remark
                               </button>
-                              <button
-                                className="validate-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleValidate(request.id);
-                                }}
-                              >
-                                Approve
-                              </button>
-                              <button
-                                className="reject-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReject(request.id);
-                                }}
-                                disabled={!remarkText.trim()}
-                              >
-                                Reject
-                              </button>
+                              {/* Only show Approve/Reject buttons if the request is still pending */}
+                              {request.validationStatus === "PENDING" && (
+                                <>
+                                  <button
+                                    className="validate-button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleValidate(request.id);
+                                    }}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    className="reject-button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReject(request.id);
+                                    }}
+                                    disabled={!remarkText.trim()}
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                              {/* Show status message if already validated or rejected */}
+                              {request.validationStatus === "VALIDATED" && (
+                                <span className="status-message validated">Request has been approved</span>
+                              )}
+                              {request.validationStatus === "REJECTED" && (
+                                <span className="status-message rejected">Request has been rejected</span>
+                              )}
                             </div>
                           </div>
                         </div>
