@@ -99,11 +99,14 @@ const ProfilePage = () => {
   }
 
   const handleProfessionalInfoChange = (e) => {
-    const { name, value } = e.target
-    setProfessionalInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    // Only allow changes to professional info if profile is not complete yet
+    if (!isProfileComplete) {
+      const { name, value } = e.target
+      setProfessionalInfo((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
+    }
   }
 
   const validateForm = () => {
@@ -116,12 +119,14 @@ const ProfilePage = () => {
     if (!personalInfo.username) tempErrors.username = "Username is required"
     if (!personalInfo.contact_no) tempErrors.contact_no = "Mobile number is required"
 
-    // Validate professional info
-    if (!professionalInfo.employee_number) tempErrors.employee_number = "Employee number is required"
-    if (!professionalInfo.school_id) tempErrors.school_id = "School ID is required"
-    if (!professionalInfo.school_name) tempErrors.school_name = "School name is required"
-    if (!professionalInfo.district) tempErrors.district = "District is required"
-    if (!professionalInfo.position) tempErrors.position = "Position is required"
+    // Only validate professional info if profile is not complete yet
+    if (!isProfileComplete) {
+      if (!professionalInfo.employee_number) tempErrors.employee_number = "Employee number is required"
+      if (!professionalInfo.school_id) tempErrors.school_id = "School ID is required"
+      if (!professionalInfo.school_name) tempErrors.school_name = "School name is required"
+      if (!professionalInfo.district) tempErrors.district = "District is required"
+      if (!professionalInfo.position) tempErrors.position = "Position is required"
+    }
 
     setErrors(tempErrors)
     return Object.keys(tempErrors).length === 0
@@ -136,7 +141,12 @@ const ProfilePage = () => {
         setIsLoading(true)
         try {
             const token = localStorage.getItem('accessToken')
-            const updatedUserData = {
+            
+            // If profile is complete, only update personal info
+            // If profile is not complete yet, update both personal and professional info
+            const updatedUserData = isProfileComplete ? {
+                ...personalInfo
+            } : {
                 ...personalInfo,
                 ...professionalInfo,
             }
@@ -253,6 +263,11 @@ const ProfilePage = () => {
 
           {/* Professional Information */}
           <div className="info-card">
+            {isProfileComplete && (
+              <div className="admin-note">
+                <p>To update professional information, please contact the administrator.</p>
+              </div>
+            )}
             <div className="form-group">
               <input
                 type="text"
@@ -260,7 +275,7 @@ const ProfilePage = () => {
                 placeholder="Employee Number"
                 value={professionalInfo.employee_number}
                 onChange={handleProfessionalInfoChange}
-                disabled={!isEditing || redirecting}
+                disabled={isProfileComplete || !isEditing || redirecting}
                 className={errors.employee_number ? "error" : ""}
               />
               {errors.employee_number && <span className="error-message">{errors.employee_number}</span>}
@@ -272,7 +287,7 @@ const ProfilePage = () => {
                 placeholder="School ID"
                 value={professionalInfo.school_id}
                 onChange={handleProfessionalInfoChange}
-                disabled={!isEditing || redirecting}
+                disabled={isProfileComplete || !isEditing || redirecting}
                 className={errors.school_id ? "error" : ""}
               />
               {errors.school_id && <span className="error-message">{errors.school_id}</span>}
@@ -284,7 +299,7 @@ const ProfilePage = () => {
                 placeholder="School Name"
                 value={professionalInfo.school_name}
                 onChange={handleProfessionalInfoChange}
-                disabled={!isEditing || redirecting}
+                disabled={isProfileComplete || !isEditing || redirecting}
                 className={errors.school_name ? "error" : ""}
               />
               {errors.school_name && <span className="error-message">{errors.school_name}</span>}
@@ -296,7 +311,7 @@ const ProfilePage = () => {
                 placeholder="District"
                 value={professionalInfo.district}
                 onChange={handleProfessionalInfoChange}
-                disabled={!isEditing || redirecting}
+                disabled={isProfileComplete || !isEditing || redirecting}
                 className={errors.district ? "error" : ""}
               />
               {errors.district && <span className="error-message">{errors.district}</span>}
@@ -308,7 +323,7 @@ const ProfilePage = () => {
                 placeholder="Position"
                 value={professionalInfo.position}
                 onChange={handleProfessionalInfoChange}
-                disabled={!isEditing || redirecting}
+                disabled={isProfileComplete || !isEditing || redirecting}
                 className={errors.position ? "error" : ""}
               />
               {errors.position && <span className="error-message">{errors.position}</span>}

@@ -126,4 +126,17 @@
     cursor: not-allowed;
   }
   
+  .admin-note {
+    background-color: #e7f3fe;
+    border-left: 4px solid #2196F3;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
   
+  .admin-note p {
+    margin: 0;
+    color: #0c5460;
+    font-size: 14px;
+    font-weight: 500;
+  }
