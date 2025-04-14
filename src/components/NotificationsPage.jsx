@@ -190,6 +190,8 @@ const NotificationsPage = () => {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const fetchNotifications = async (pageNum = 1, append = false) => {
     try {
@@ -197,7 +199,9 @@ const NotificationsPage = () => {
       const response = await axios.get('http://localhost:3000/notifications', {
         params: {
           page: pageNum,
-          limit: 10
+          limit: 10,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined
         },
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -256,6 +260,20 @@ const NotificationsPage = () => {
     setPage(nextPage);
     fetchNotifications(nextPage, true);
   };
+  
+  const handleDateSearch = () => {
+    setLoading(true);
+    setPage(1);
+    fetchNotifications(1, false);
+  };
+  
+  const handleClearDateFilter = () => {
+    setStartDate('');
+    setEndDate('');
+    setLoading(true);
+    setPage(1);
+    fetchNotifications(1, false);
+  };
 
   if (loading) {
     return (
@@ -276,6 +294,44 @@ const NotificationsPage = () => {
       <div className="notifications-container">
         <div className="notifications-card">
           <h2>NOTIFICATIONS</h2>
+          <div className="date-filter-container">
+            <div className="date-inputs">
+              <div className="date-input-group">
+                <label htmlFor="startDate">From:</label>
+                <input
+                  type="date"
+                  id="startDate"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="date-input-group">
+                <label htmlFor="endDate">To:</label>
+                <input
+                  type="date"
+                  id="endDate"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="date-filter-buttons">
+              <button 
+                className="search-button" 
+                onClick={handleDateSearch}
+                disabled={loading}
+              >
+                Search
+              </button>
+              <button 
+                className="clear-button" 
+                onClick={handleClearDateFilter}
+                disabled={loading || (!startDate && !endDate)}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
           <div className="notifications-list">
             {notifications.length === 0 ? (
               <p className="no-notifications">No notifications to display</p>
