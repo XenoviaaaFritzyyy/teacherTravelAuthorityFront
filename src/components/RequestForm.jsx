@@ -89,20 +89,36 @@ const RequestForm = () => {
 
   // Handle department changes from react-select
   const handleDepartmentChange = (selectedOptions) => {
-    // selectedOptions is an array of objects like: [{ value: 'Accounting', label: 'Accounting' }, ...]
-    // We only store the array of values (strings) in state.
-    const departmentsArray = selectedOptions ? selectedOptions.map((opt) => opt.value) : []
-    setFormData((prev) => ({ ...prev, department: departmentsArray }))
-
-    if (departmentsArray.includes("Others")) {
-      setShowOtherInput(true)
-    } else {
-      setShowOtherInput(false)
-      setFormData((prev) => ({ ...prev, otherDepartment: "" }))
+    // If no options are selected
+    if (!selectedOptions || selectedOptions.length === 0) {
+      setFormData((prev) => ({ ...prev, department: [] }));
+      setShowOtherInput(false);
+      return;
     }
 
+    // Check if the new selection includes 'Others'
+    const hasOthers = selectedOptions.some(opt => opt.value === "Others");
+    const othersOption = departmentOptions.find(opt => opt.value === "Others");
+    
+    // If the user is selecting 'Others'
+    if (hasOthers) {
+      // If 'Others' is being added to the selection, keep only 'Others'
+      if (selectedOptions.length > 1) {
+        selectedOptions = [othersOption];
+      }
+      setShowOtherInput(true);
+    } else {
+      // If 'Others' is not selected, hide the input field and clear its value
+      setShowOtherInput(false);
+      setFormData((prev) => ({ ...prev, otherDepartment: "" }));
+    }
+  
+    // Extract just the values from the selected options
+    const departmentsArray = selectedOptions.map((opt) => opt.value);
+    setFormData((prev) => ({ ...prev, department: departmentsArray }));
+
     if (errors.department) {
-      setErrors((prev) => ({ ...prev, department: null }))
+      setErrors((prev) => ({ ...prev, department: null }));
     }
   }
 
@@ -235,6 +251,7 @@ const RequestForm = () => {
           {/* React-Select for multi-department */}
           <div className="form-group">
             <label htmlFor="department">Department (Select at least 2):</label>
+            <label htmlFor="department">Note: If "Others" Please SPECIFY in the Textbox below.</label>
 
             <Select
               isMulti
@@ -247,6 +264,15 @@ const RequestForm = () => {
               onChange={handleDepartmentChange}
               isDisabled={isSubmitting}
               className={errors.department ? "error" : ""}
+              // Completely prevent dropdown from opening when "Others" is selected
+              menuIsOpen={formData.department.includes("Others") ? false : undefined}
+              // Add custom styles to indicate dropdown is disabled when Others is selected
+              styles={{
+                control: (baseStyles, state) => ({
+                  ...baseStyles,
+                  cursor: formData.department.includes("Others") ? 'not-allowed' : 'default',
+                }),
+              }}
             />
 
             {errors.department && (
