@@ -208,14 +208,18 @@ const NotificationsPage = () => {
       
       const { notifications: fetchedNotifications, total } = response.data;
       
+      let updatedNotifications;
       if (append) {
-        setNotifications(prev => [...prev, ...fetchedNotifications]);
+        updatedNotifications = [...notifications, ...fetchedNotifications];
+        setNotifications(updatedNotifications);
       } else {
-        setNotifications(fetchedNotifications);
+        updatedNotifications = fetchedNotifications;
+        setNotifications(updatedNotifications);
       }
       
       // Check if we've loaded all notifications
-      setHasMore(notifications.length + fetchedNotifications.length < total);
+      // Use the updated notifications count to determine if there are more to load
+      setHasMore(updatedNotifications.length < total);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -226,6 +230,8 @@ const NotificationsPage = () => {
 
   useEffect(() => {
     fetchNotifications(1, false);
+    // Don't include startDate and endDate as dependencies to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleNotificationClick = async (id) => {
@@ -262,16 +268,26 @@ const NotificationsPage = () => {
   };
   
   const handleDateSearch = () => {
+    // Only proceed if at least one date is selected
+    if (!startDate && !endDate) return;
+    
     setLoading(true);
     setPage(1);
+    // Reset hasMore to ensure load more works after filtering
+    setHasMore(true);
     fetchNotifications(1, false);
   };
   
   const handleClearDateFilter = () => {
+    // Only proceed if there are dates to clear
+    if (!startDate && !endDate) return;
+    
     setStartDate('');
     setEndDate('');
     setLoading(true);
     setPage(1);
+    // Reset hasMore to ensure load more works after clearing filter
+    setHasMore(true);
     fetchNotifications(1, false);
   };
 
