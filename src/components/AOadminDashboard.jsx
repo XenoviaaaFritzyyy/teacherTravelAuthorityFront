@@ -441,7 +441,7 @@ const AdminDashboard = () => {
             >
               <option value="all">All</option>
               <option value="PENDING">Pending</option>
-              <option value="VALIDATED">Validated</option>
+              <option value="VALIDATED">Approved</option>
               <option value="REJECTED">Rejected</option>
             </select>
           </div>
@@ -579,7 +579,7 @@ const AdminDashboard = () => {
                                 handleValidate(order.id);
                               }}
                             >
-                              VALIDATE
+                              APPROVE
                             </button>
                             <button
                               className="reject-button"
