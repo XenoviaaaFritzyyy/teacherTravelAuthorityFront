@@ -627,8 +627,6 @@ const AOadminOfficerDashboard = () => {
                             e.stopPropagation();
                             generateReceipt(order);
                           }}
-                          disabled={!checkAllDepartmentRemarks(order)}
-                          title={!checkAllDepartmentRemarks(order) ? "Waiting for remarks from all department heads" : ""}
                         >
                           Generate Receipt
                         </button>

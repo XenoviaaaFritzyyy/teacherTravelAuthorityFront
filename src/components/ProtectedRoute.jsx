@@ -78,8 +78,8 @@ const ProtectedRoute = ({ children }) => {
   // Define allowed routes for each role
   const roleRoutes = {
     'Admin': ['/superadmin'],
-    'AO Admin': ['/admin', '/notifications'],
-    'AO Admin Officer': ['/aoadminofficer', '/profile', '/notifications'],
+    'AO Admin': ['/administrativeofficer', '/notifications'],
+    'AO Admin Officer': ['/departmentofficer', '/profile', '/notifications'],
     'Teacher': ['/dashboard', '/profile', '/notifications'],
     'Principal': ['/principal', '/profile', '/notifications'],
     'PSDS': ['/psds', '/profile', '/notifications'],
@@ -96,9 +96,9 @@ const ProtectedRoute = ({ children }) => {
       case 'Admin':
         return <Navigate to="/superadmin" replace />
       case 'AO Admin':
-        return <Navigate to="/admin" replace />
+        return <Navigate to="/administrativeofficer" replace />
       case 'AO Admin Officer':
-        return <Navigate to="/aoadminofficer" replace />
+        return <Navigate to="/departmentofficer" replace />
       case 'Principal':
         return <Navigate to="/principal" replace />
       case 'PSDS':

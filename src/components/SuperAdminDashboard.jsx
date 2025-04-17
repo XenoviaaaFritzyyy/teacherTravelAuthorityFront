@@ -156,8 +156,8 @@ const SuperAdminDashboard = () => {
     { value: "PSDS", label: "PSDS" },
     { value: "ASDS", label: "ASDS" },
     { value: "SDS", label: "SDS" },
-    { value: "AO Admin Officer", label: "AO Admin Officer" },
-    { value: "AO Admin", label: "AO Admin" },
+    { value: "AO Admin Officer", label: "Department Officer" },
+    { value: "AO Admin", label: "Administrative Officer" },
     { value: "Admin", label: "Admin" }
   ];
 

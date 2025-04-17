@@ -81,7 +81,7 @@ const LoginPage = () => {
         navigate('/superadmin')
         break
       case 'AO Admin':
-        navigate('/admin')
+        navigate('/administrativeofficer')
         break
       default:
         const isProfileComplete = userData.school_id && 
