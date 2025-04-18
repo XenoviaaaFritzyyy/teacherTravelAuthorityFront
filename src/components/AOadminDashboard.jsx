@@ -436,7 +436,7 @@ const AdminDashboard = () => {
             >
               <option value="all">All</option>
               <option value="PENDING">Pending</option>
-              <option value="VALIDATED">Validated</option>
+              <option value="VALIDATED">Approved</option>
               <option value="REJECTED">Rejected</option>
             </select>
           </div>
@@ -565,6 +565,28 @@ const AdminDashboard = () => {
                             Submit Remark
                           </button>
                         </div>
+                        {order.validationStatus === "PENDING" && (
+                          <div className="action-buttons">
+                            <button
+                              className="validate-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleValidate(order.id);
+                              }}
+                            >
+                              APPROVE
+                            </button>
+                            <button
+                              className="reject-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(order.id);
+                              }}
+                            >
+                              REJECT
+                            </button>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="no-permission-notice">
