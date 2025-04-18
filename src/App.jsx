@@ -49,7 +49,7 @@ function App() {
             }
           />
           <Route
-            path="/administrativeofficer"
+            path="/departmentofficer"
             element={
               <ProtectedRoute requiredRole="AO Admin">
                 <AdminDashboard />
@@ -57,7 +57,7 @@ function App() {
             }
           />
           <Route
-            path="/departmentofficer"
+            path="/administrativeofficer"
             element={
               <ProtectedRoute requiredRole="AO Admin Officer">
                 <AOadminOfficerDashboard />

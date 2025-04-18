@@ -58,6 +58,7 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCheckingExpiredCodes, setIsCheckingExpiredCodes] = useState(false);
   const [activeView, setActiveView] = useState("orders");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Current user's position state
   const [userPosition, setUserPosition] = useState("");
@@ -78,6 +79,20 @@ const AdminDashboard = () => {
       } catch (error) {
         console.error("Failed to fetch current user profile:", error);
         setUserPosition("Unknown Position");
+      }
+    };
+
+    // Fetch notifications
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const response = await axios.get('http://localhost:3000/notifications', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const unread = response.data.notifications.filter(n => !n.isRead).length;
+        setUnreadCount(unread);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
       }
     };
 
@@ -114,8 +129,16 @@ const AdminDashboard = () => {
       }
     };
 
+    // Initial fetches
     fetchCurrentUser();
     fetchTravelOrders();
+    fetchNotifications();
+
+    // Set up interval for notifications
+    const notificationInterval = setInterval(fetchNotifications, 30000);
+
+    // Cleanup
+    return () => clearInterval(notificationInterval);
   }, []);
 
   // Helper: Returns auth headers
@@ -263,84 +286,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleReject = async (id) => {
-    const order = travelOrders.find((o) => o.id === id);
-    if (!order) return;
-
-    const oldRemarks = order.remarks || "";
-    const newRemarkWithPosition = appendPositionToRemark(remarkText);
-    const appendedRemarks = remarkText.trim()
-      ? combineRemarks(oldRemarks, newRemarkWithPosition)
-      : oldRemarks;
-
-    try {
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
-        { validationStatus: "REJECTED" },
-        getAuthHeaders()
-      );
-      if (remarkText.trim()) {
-        await axios.patch(
-          `http://localhost:3000/travel-requests/${id}/remarks`,
-          { remarks: appendedRemarks },
-          getAuthHeaders()
-        );
-      }
-      setTravelOrders((prevOrders) =>
-        prevOrders.map((ord) =>
-          ord.id === id
-            ? { ...ord, validationStatus: "REJECTED", remarks: appendedRemarks }
-            : ord
-        )
-      );
-      setExpandedId(null);
-      alert("Travel request rejected successfully!");
-      setRemarkText("");
-    } catch (error) {
-      console.error("Failed to reject travel request:", error);
-      alert("Failed to reject travel request. Please try again.");
-    }
-  };
-
-  const handleValidate = async (id) => {
-    const order = travelOrders.find((o) => o.id === id);
-    if (!order) return;
-
-    const oldRemarks = order.remarks || "";
-    const newRemarkWithPosition = appendPositionToRemark(remarkText);
-    const appendedRemarks = remarkText.trim()
-      ? combineRemarks(oldRemarks, newRemarkWithPosition)
-      : oldRemarks;
-
-    try {
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
-        { validationStatus: "VALIDATED" },
-        getAuthHeaders()
-      );
-      if (remarkText.trim()) {
-        await axios.patch(
-          `http://localhost:3000/travel-requests/${id}/remarks`,
-          { remarks: appendedRemarks },
-          getAuthHeaders()
-        );
-      }
-      setTravelOrders((prevOrders) =>
-        prevOrders.map((ord) =>
-          ord.id === id
-            ? { ...ord, validationStatus: "VALIDATED", remarks: appendedRemarks }
-            : ord
-        )
-      );
-      setExpandedId(null);
-      alert("Travel request validated successfully!");
-      setRemarkText("");
-    } catch (error) {
-      console.error("Failed to validate travel request:", error);
-      alert("Failed to validate travel request. Please try again.");
-    }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('accessToken')
     navigate('/login')
@@ -397,6 +342,55 @@ const AdminDashboard = () => {
     }
   };
 
+  // Add notification handler
+  const handleNotificationClick = () => {
+    navigate("/notifications");
+  };
+
+  const handleReject = async (id) => {
+    if (!remarkText.trim()) {
+      alert("Please enter remarks before rejecting.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const newRemark = appendPositionToRemark(remarkText);
+      const order = travelOrders.find(o => o.id === id);
+      const updatedRemarks = combineRemarks(order.remarks, newRemark);
+
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}`,
+        {
+          remarks: updatedRemarks,
+          validationStatus: "REJECTED"
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Update local state
+      setTravelOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id
+            ? {
+                ...order,
+                remarks: updatedRemarks,
+                validationStatus: "REJECTED"
+              }
+            : order
+        )
+      );
+
+      setRemarkText("");
+      alert("Travel request rejected successfully");
+    } catch (error) {
+      console.error("Error rejecting travel request:", error);
+      alert("Failed to reject travel request");
+    }
+  };
+
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
@@ -406,14 +400,15 @@ const AdminDashboard = () => {
             alt="DepEd Logo"
             className="deped-logo"
           />
-                   <span className="admin-header-text">Travel Authority System</span>
+          <span className="admin-header-text">Travel Authority System</span>
         </div>
         <div className="admin-actions">
           <button className="icon-button" onClick={() => setActiveView("orders")}>
             <Home className="icon" />
           </button>
-          <button className="icon-button">
+          <button className="icon-button" onClick={handleNotificationClick}>
             <Bell className="icon" />
+            {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
           </button>
           <button className="logout-button" onClick={handleLogout}>
             Logout
@@ -570,28 +565,6 @@ const AdminDashboard = () => {
                             Submit Remark
                           </button>
                         </div>
-                        {order.validationStatus === "PENDING" && (
-                          <div className="action-buttons">
-                            <button
-                              className="validate-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleValidate(order.id);
-                              }}
-                            >
-                              VALIDATE
-                            </button>
-                            <button
-                              className="reject-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(order.id);
-                              }}
-                            >
-                              REJECT
-                            </button>
-                          </div>
-                        )}
                       </>
                     ) : (
                       <div className="no-permission-notice">

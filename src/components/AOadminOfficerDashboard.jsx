@@ -148,7 +148,7 @@ const AOadminOfficerDashboard = () => {
   const getStatusDisplayText = (status, validationStatus, isCodeExpired) => {
     if (isCodeExpired) return "EXPIRED";
     
-    if (validationStatus === "VALIDATED") return "VALIDATED";
+    if (validationStatus === "VALIDATED") return "APPROVED";
     if (validationStatus === "REJECTED") return "REJECTED";
     return status.toUpperCase();
   };
@@ -208,7 +208,7 @@ const AOadminOfficerDashboard = () => {
     }
 
     // Format the new remark with name and position
-    const newRemarkWithPosition = appendPositionToRemark(remarkText);
+    const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
     
     // Handle multiple remarks
     const updatedRemarks = order.remarks 
@@ -290,61 +290,109 @@ const AOadminOfficerDashboard = () => {
     window.location.reload()
   }
 
-  // Generate receipt for a travel request
-  const generateReceipt = (order) => {
-    setReceiptData(order);
-    setShowReceiptModal(true);
+  // Validate and generate receipt for a travel request
+  const validateAndGenerateReceipt = async (order) => {
+    try {
+      // First validate the request
+      const validationResponse = await axios.patch(
+        `http://localhost:3000/travel-requests/${order.id}/validate`,
+        { validationStatus: "VALIDATED" },
+        getAuthHeaders()
+      );
+
+      if (validationResponse.data) {
+        // Update the order with the validation response data
+        const updatedOrder = {
+          ...order,
+          ...validationResponse.data,
+          validationStatus: "VALIDATED"
+        };
+
+        // Show validation summary modal
+        setReceiptData(updatedOrder);
+        setShowReceiptModal(true);
+
+        // Update local state
+        setTravelOrders((prevOrders) =>
+          prevOrders.map((ord) =>
+            ord.id === order.id
+              ? updatedOrder
+              : ord
+          )
+        );
+
+        alert("Travel request validated successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to validate request:", error);
+      if (error.response?.status === 403) {
+        alert("You don't have permission to validate this request. Please contact your administrator.");
+      } else {
+        alert("Failed to validate request. Please try again.");
+      }
+    }
   };
 
-  // Handle printing the receipt
-  const handlePrintReceipt = async () => {
-    if (!receiptData) return;
+  // Handle rejecting a request
+  const handleReject = async (id) => {
+    if (!remarkText.trim()) {
+      alert("Please provide a reason for rejection in the remarks field.");
+      return;
+    }
+
+    const order = travelOrders.find((o) => o.id === id);
+    if (!order) return;
+
+    const oldRemarks = order.remarks || "";
+    const newRemarkWithPosition = appendPositionToRemark(remarkText);
+    const appendedRemarks = combineRemarks(oldRemarks, newRemarkWithPosition);
 
     try {
-      // First, send a notification to the user
-      const token = localStorage.getItem('accessToken');
-      const message = `Your travel request receipt is ready. Security Code: ${receiptData.securityCode}`;
-      
-      await axios.post(
-        `http://localhost:3000/travel-requests/${receiptData.id}/receipt`,
-        { message },
-        { headers: { Authorization: `Bearer ${token}` } }
+      // First add the rejection remark
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/remarks`,
+        { remarks: appendedRemarks },
+        getAuthHeaders()
       );
-      
-      // Generate the PDF using the shared utility
-      const doc = generateReceiptPDF(receiptData, getStatusDisplayText);
-      
-      // Save the PDF
-      doc.save(`Travel_Receipt_${receiptData.securityCode}.pdf`);
-      
-      // Close the modal and show success message
-      setShowReceiptModal(false);
-      alert("Receipt has been generated and sent to the user");
+
+      // Then reject the request
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/validate`,
+        { validationStatus: "REJECTED" },
+        getAuthHeaders()
+      );
+
+      setTravelOrders((prevOrders) =>
+        prevOrders.map((ord) =>
+          ord.id === id
+            ? { ...ord, validationStatus: "REJECTED", remarks: appendedRemarks }
+            : ord
+        )
+      );
+      setExpandedId(null);
+      setRemarkText("");
+      alert("Travel request rejected successfully!");
     } catch (error) {
-      console.error("Error sending receipt notification:", error);
-      alert("There was an error sending the receipt notification. Please try again.");
+      console.error("Failed to reject travel request:", error);
+      alert("Failed to reject travel request. Please try again.");
     }
   };
 
   // Receipt Modal Component
-  const ReceiptModal = ({ show, onClose, data, onPrint }) => {
+  const ReceiptModal = ({ show, onClose, data }) => {
     if (!show || !data) return null;
     
     return (
       <div className="receipt-modal">
         <div className="receipt-modal-content">
           <div className="receipt-header">
-            <h2>Travel Authority Receipt</h2>
+            <h2>Travel Request Summary</h2>
             <button className="close-button" onClick={onClose}>×</button>
           </div>
           
           <div className="receipt-body">
             <div className="receipt-section">
               <h3>Travel Details</h3>
-              <div className="receipt-detail">
-                <span className="label">Security Code:</span>
-                <span className="value">{data.securityCode}</span>
-              </div>
               <div className="receipt-detail">
                 <span className="label">Name:</span>
                 <span className="value">{data.teacherName}</span>
@@ -385,13 +433,6 @@ const AOadminOfficerDashboard = () => {
                 )) : <p>No remarks</p>}
               </div>
             </div>
-          </div>
-          
-          <div className="receipt-footer">
-            <button className="print-button" onClick={onPrint}>
-              <Printer size={16} />
-              Print Receipt
-            </button>
           </div>
         </div>
       </div>
@@ -492,7 +533,7 @@ const AOadminOfficerDashboard = () => {
             >
               <option value="all">All</option>
               <option value="PENDING">Pending</option>
-              <option value="VALIDATED">Validated</option>
+              <option value="VALIDATED">Approved</option>
               <option value="REJECTED">Rejected</option>
             </select>
           </div>
@@ -619,16 +660,26 @@ const AOadminOfficerDashboard = () => {
                       </button>
                     </div>
                     
-                    {order.validationStatus === "VALIDATED" && (
+                    {order.validationStatus === "PENDING" && (
                       <div className="action-buttons">
                         <button
-                          className="generate-receipt-button"
+                          className="validate-button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            generateReceipt(order);
+                            validateAndGenerateReceipt(order);
                           }}
                         >
-                          Generate Receipt
+                          APPROVE
+                        </button>
+                        <button
+                          className="reject-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReject(order.id);
+                          }}
+                          disabled={!remarkText.trim()}
+                        >
+                          Reject
                         </button>
                       </div>
                     )}
@@ -645,7 +696,6 @@ const AOadminOfficerDashboard = () => {
         show={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
         data={receiptData}
-        onPrint={handlePrintReceipt}
       />
     </div>
   );

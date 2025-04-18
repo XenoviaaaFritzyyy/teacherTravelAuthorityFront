@@ -21,7 +21,7 @@ const Navbar = () => {
         const response = await axios.get('http://localhost:3000/notifications', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const unread = response.data.filter(n => !n.isRead).length;
+        const unread = response.data.notifications.filter(n => !n.isRead).length;
         setUnreadCount(unread);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
@@ -29,6 +29,9 @@ const Navbar = () => {
     };
 
     fetchUnreadNotifications();
+    const interval = setInterval(fetchUnreadNotifications, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleHomeClick = () => {
