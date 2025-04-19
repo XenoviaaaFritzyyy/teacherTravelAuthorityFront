@@ -15,11 +15,13 @@ import Sds from "./components/Sds"
 import SignUpPage from "./components/SignUpPage"
 import SuperAdminDashboard from "./components/SuperAdminDashboard"
 import { UserProvider } from "./context/UserContext"
+import { SnackbarProvider } from "./components/SnackbarProvider"
 
 function App() {
   return (
     <UserProvider>
-      <Router>
+      <SnackbarProvider>
+        <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignUpPage />} />
@@ -106,6 +108,7 @@ function App() {
           />
         </Routes>
       </Router>
+      </SnackbarProvider>
     </UserProvider>
   )
 }

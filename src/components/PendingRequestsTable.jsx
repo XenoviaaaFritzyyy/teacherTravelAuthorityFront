@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useUser } from "../context/UserContext";
+import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
 import "./PendingRequestsTable.css";
 
 const PendingRequestsTable = ({ onUnviewedCountChange }) => {
@@ -170,10 +171,10 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
         )
       );
       setRemarkText("");
-      alert("Remark added successfully!");
+      showSnackbar("Remark added successfully!", 'success');
     } catch (error) {
       console.error("Failed to add remark:", error);
-      alert("Failed to add remark. Please try again.");
+      showSnackbar("Failed to add remark. Please try again.", 'error');
     }
   };
 
@@ -211,13 +212,13 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
       );
       setExpandedId(null);
       setRemarkText("");
-      alert("Travel request approved successfully!");
+      showSnackbar("Travel request approved successfully!", 'success');
       
       // Refresh the list
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error("Failed to validate travel request:", error);
-      alert("Failed to validate travel request. Please try again.");
+      showSnackbar("Failed to validate travel request. Please try again.", 'error');
     }
   };
 
@@ -228,7 +229,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
 
     // Require a remark for rejection
     if (!remarkText.trim()) {
-      alert("Please provide a reason for rejection in the remarks field.");
+      showSnackbar("Please provide a reason for rejection in the remarks field.", 'warning');
       return;
     }
 
@@ -257,13 +258,13 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
       );
       setExpandedId(null);
       setRemarkText("");
-      alert("Travel request rejected successfully.");
+      showSnackbar("Travel request rejected successfully.", 'success');
       
       // Refresh the list
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error("Failed to reject travel request:", error);
-      alert("Failed to reject travel request. Please try again.");
+      showSnackbar("Failed to reject travel request. Please try again.", 'error');
     }
   };
 

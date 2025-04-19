@@ -4,6 +4,7 @@ import axios from "axios";
 import { Bell, Home, RefreshCw } from "lucide-react"; 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
 import "./AOadminDashboard.css";
 
 const departments = [
@@ -186,10 +187,10 @@ const AdminDashboard = () => {
       setTravelOrders(formatted);
       setIsCheckingExpiredCodes(false);
       
-      alert(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`);
+      showSnackbar(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`, 'success');
     } catch (error) {
       console.error("Failed to check expired codes:", error);
-      alert("Failed to check expired codes. Please try again.");
+      showSnackbar("Failed to check expired codes. Please try again.", 'error');
       setIsCheckingExpiredCodes(false);
     }
   };
@@ -247,13 +248,13 @@ const AdminDashboard = () => {
 
   const handleSubmitRemark = async (id) => {
     if (!remarkText.trim()) {
-      alert("Please enter a remark before submitting.");
+      showSnackbar("Please enter a remark before submitting.", 'warning');
       return;
     }
 
     const order = travelOrders.find((o) => o.id === id);
     if (!order) {
-      alert("Could not find that travel order.");
+      showSnackbar("Could not find that travel order.", 'error');
       return;
     }
 
@@ -278,11 +279,11 @@ const AdminDashboard = () => {
         )
       );
       
-      alert("Remark submitted successfully!");
+      showSnackbar("Remark submitted successfully!", 'success');
       setRemarkText("");
     } catch (error) {
       console.error("Failed to submit remark:", error);
-      alert("Failed to submit remark. Please try again.");
+      showSnackbar("Failed to submit remark. Please try again.", 'error');
     }
   };
 
@@ -349,7 +350,7 @@ const AdminDashboard = () => {
 
   const handleReject = async (id) => {
     if (!remarkText.trim()) {
-      alert("Please enter remarks before rejecting.");
+      showSnackbar("Please enter remarks before rejecting.", 'warning');
       return;
     }
 
@@ -384,10 +385,10 @@ const AdminDashboard = () => {
       );
 
       setRemarkText("");
-      alert("Travel request rejected successfully");
+      showSnackbar("Travel request rejected successfully", 'success');
     } catch (error) {
       console.error("Error rejecting travel request:", error);
-      alert("Failed to reject travel request");
+      showSnackbar("Failed to reject travel request", 'error');
     }
   };
 

@@ -4,6 +4,7 @@ import axios from "axios";
 import { Bell, Home, Printer, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
 import "./AOadminOfficerDashboard.css";
 import jsPDF from 'jspdf';
 import { formatDate, generateReceiptPDF, getStatusBadgeClass, getStatusDisplayText } from "../utils/receiptGenerator";
@@ -197,13 +198,13 @@ const AOadminOfficerDashboard = () => {
 
   const handleSubmitRemark = async (id) => {
     if (!remarkText.trim()) {
-      alert("Please enter a remark before submitting.");
+      showSnackbar("Please enter a remark before submitting.", 'warning');
       return;
     }
 
     const order = travelOrders.find((o) => o.id === id);
     if (!order) {
-      alert("Could not find that travel order.");
+      showSnackbar("Could not find that travel order.", 'error');
       return;
     }
 
@@ -228,11 +229,11 @@ const AOadminOfficerDashboard = () => {
         )
       );
       
-      alert("Remark submitted successfully!");
+      showSnackbar("Remark submitted successfully!", 'success');
       setRemarkText("");
     } catch (error) {
       console.error("Failed to submit remark:", error);
-      alert("Failed to submit remark. Please try again.");
+      showSnackbar("Failed to submit remark. Please try again.", 'error');
     }
   };
 
@@ -321,14 +322,14 @@ const AOadminOfficerDashboard = () => {
           )
         );
 
-        alert("Travel request validated successfully!");
+        showSnackbar("Travel request validated successfully!", 'success');
       }
     } catch (error) {
       console.error("Failed to validate request:", error);
       if (error.response?.status === 403) {
-        alert("You don't have permission to validate this request. Please contact your administrator.");
+        showSnackbar("You don't have permission to validate this request. Please contact your administrator.", 'error');
       } else {
-        alert("Failed to validate request. Please try again.");
+        showSnackbar("Failed to validate request. Please try again.", 'error');
       }
     }
   };
@@ -336,7 +337,7 @@ const AOadminOfficerDashboard = () => {
   // Handle rejecting a request
   const handleReject = async (id) => {
     if (!remarkText.trim()) {
-      alert("Please provide a reason for rejection in the remarks field.");
+      showSnackbar("Please provide a reason for rejection in the remarks field.", 'warning');
       return;
     }
 
@@ -371,10 +372,10 @@ const AOadminOfficerDashboard = () => {
       );
       setExpandedId(null);
       setRemarkText("");
-      alert("Travel request rejected successfully!");
+      showSnackbar("Travel request rejected successfully!", 'success');
     } catch (error) {
       console.error("Failed to reject travel request:", error);
-      alert("Failed to reject travel request. Please try again.");
+      showSnackbar("Failed to reject travel request. Please try again.", 'error');
     }
   };
 

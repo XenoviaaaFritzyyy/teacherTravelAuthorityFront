@@ -3,7 +3,7 @@
 import axios from "axios"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from './SnackbarProvider'; // Correct import
 import "./SuperAdminDashboard.css"
 
 // Replacing the original departments array with the one from AOadminDashboard
@@ -49,7 +49,7 @@ const departments = [
 ];
 
 const SuperAdminDashboard = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [editedUsers, setEditedUsers] = useState({});
@@ -132,10 +132,10 @@ const SuperAdminDashboard = () => {
       
       setEditedUsers({});
       setHasChanges(false);
-      enqueueSnackbar("Changes saved successfully!", { variant: 'success' });
+      showSnackbar("Changes saved successfully!", 'success');
     } catch (error) {
       console.error("Failed to save changes:", error);
-      enqueueSnackbar("Failed to save changes. Please try again.", { variant: 'error' });
+      showSnackbar("Failed to save changes. Please try again.", 'error');
     }
   };
 
@@ -167,10 +167,10 @@ const SuperAdminDashboard = () => {
         {},
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
-      enqueueSnackbar('Password has been reset to "password123". User will be required to change password on next login.', { variant: 'info' });
+      showSnackbar('Password has been reset to "password123". User will be required to change password on next login.', 'info');
     } catch (error) {
       console.error("Failed to reset password:", error);
-      enqueueSnackbar("Failed to reset password. Please try again.", { variant: 'error' });
+      showSnackbar("Failed to reset password. Please try again.", 'error');
     }
   };
 
