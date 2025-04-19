@@ -86,7 +86,9 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   y += 10;
   doc.setFontSize(10);
   doc.text('From:', labelX, y);
-  doc.text('OFFICE OF THE PRINCIPAL', (lineStartX + lineEndX) / 2, y, { align: 'center' });
+  // Use school_name from travel request if available
+  const schoolName = travelRequest.school_name || travelRequest.user?.school_name || 'OFFICE OF THE PRINCIPAL';
+  doc.text(schoolName, (lineStartX + lineEndX) / 2, y, { align: 'center' });
   
   // Draw line under the office
   doc.setLineWidth(0.1);
@@ -103,7 +105,12 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   doc.text('Date of filing:', labelX, y);
   
   // Format date as MONTH DD, YYYY
+  // Always use the current date for the filing date
   const filingDate = new Date();
+  
+  // Log the current date being used
+  console.log('Using current date for filing date:', filingDate);
+  
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate = filingDate.toLocaleDateString('en-US', options).toUpperCase();
   doc.text(formattedDate, (lineStartX + lineEndX) / 2, y, { align: 'center' });
@@ -122,43 +129,103 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   doc.setFontSize(10);
   doc.text('You are hereby authorized to travel and proceed to', 20, y);
   
-  // Add destination
-  const destination = travelRequest.destination || '';
-  const destinationX = 20 + doc.getTextWidth('You are hereby authorized to travel and proceed to ');
-  doc.text(destination, destinationX, y);
+  // Add department as the place to visit
+  // Check all possible locations where department data might be stored
+  let departmentData = null;
   
-  // Draw line under the destination
-  const destinationWidth = Math.max(doc.getTextWidth(destination), 60);
+  // Check various possible structures based on API response
+  if (travelRequest.department && Array.isArray(travelRequest.department)) {
+    departmentData = travelRequest.department;
+  } else if (travelRequest.departments && Array.isArray(travelRequest.departments)) {
+    departmentData = travelRequest.departments;
+  } else if (typeof travelRequest.department === 'string') {
+    // If department is a string (possibly comma-separated), split it
+    departmentData = travelRequest.department.split(',').map(d => d.trim());
+  }
+  
+  // Format the department text
+  const departmentText = departmentData ? departmentData.join(', ') : (travelRequest.destination || '');
+  
+  // Log for debugging
+  console.log('Department data in PDF generator:', {
+    departmentData,
+    departmentText,
+    travelRequest
+  });
+  
+  // Define the line width and position for the department
+  const departmentLineStartX = 100; // Start the line further to the right
+  const departmentLineWidth = 80; // Fixed width for the line
+  const departmentLineEndX = departmentLineStartX + departmentLineWidth;
+  
+  // Center the department text above the line
+  doc.text(departmentText, (departmentLineStartX + departmentLineEndX) / 2, y, { align: 'center' });
+  
+  // Draw line under the department text
   doc.setLineWidth(0.1);
-  doc.line(destinationX, y + 1, destinationX + destinationWidth, y + 1);
+  doc.line(departmentLineStartX, y + 1, departmentLineEndX, y + 1);
   
   // Add small text under the line
   y += 5;
   doc.setFontSize(8);
-  doc.text('(Name of office or place to visit)', destinationX + (destinationWidth / 2), y, { align: 'center' });
+  doc.text('(Name of office or place to visit)', (departmentLineStartX + departmentLineEndX) / 2, y, { align: 'center' });
   
   // Add date of travel
   y += 10;
   doc.setFontSize(10);
   doc.text('on', 20, y);
   
-  // Format travel date
+  // Format travel date range
   let travelDate = '';
-  if (travelRequest.travel_date) {
+  
+  // Check for various date field formats that might exist in the travel request
+  if (travelRequest.startDate && travelRequest.endDate) {
+    // Format: "Start Date - End Date"
+    const startDate = new Date(travelRequest.startDate);
+    const endDate = new Date(travelRequest.endDate);
+    travelDate = `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+  } else if (travelRequest.start_date && travelRequest.end_date) {
+    // Alternative field names
+    const startDate = new Date(travelRequest.start_date);
+    const endDate = new Date(travelRequest.end_date);
+    travelDate = `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+  } else if (travelRequest.travel_date) {
+    // Fallback to single date if that's all we have
     const date = new Date(travelRequest.travel_date);
     travelDate = date.toLocaleDateString('en-US', options);
   }
   
+  // Log the date information for debugging
+  console.log('Travel date information:', {
+    travelDate,
+    startDate: travelRequest.startDate || travelRequest.start_date,
+    endDate: travelRequest.endDate || travelRequest.end_date,
+    travel_date: travelRequest.travel_date
+  });
+  
+  // Calculate position after "on"
   const travelDateX = 20 + doc.getTextWidth('on ');
-  doc.text(travelDate, travelDateX, y);
+  
+  // Use a slightly smaller font size for the date range to ensure it fits
+  const originalFontSize = doc.getFontSize();
+  if (travelDate.length > 25) { // If it's a long date range
+    doc.setFontSize(9); // Reduce font size slightly
+  }
+  
+  // Calculate width for the line
+  const travelDateWidth = Math.max(doc.getTextWidth(travelDate), 60);
+  
+  // Display the travel date centered above the line
+  doc.text(travelDate, travelDateX + (travelDateWidth / 2), y, { align: 'center' });
+  
+  // Restore original font size
+  doc.setFontSize(originalFontSize);
   
   // Draw line under the travel date
-  const travelDateWidth = Math.max(doc.getTextWidth(travelDate), 60);
   doc.setLineWidth(0.1);
   doc.line(travelDateX, y + 1, travelDateX + travelDateWidth, y + 1);
   
   // Add text for official transactions on the same line
-  doc.setFontSize(10);
   const transactionTextX = travelDateX + travelDateWidth + 5;
   doc.text(', to do the following official transactions:', transactionTextX, y);
   
@@ -169,28 +236,151 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   
   // Add bullet points for purpose
   y += 10;
-  doc.text('•', 20, y);
   
   // Purpose of travel
   const purpose = travelRequest.purpose || 'TEST NOTIFICATION';
-  doc.text(purpose, 30, y);
   
-  // Draw line under the first purpose if not already filled
-  if (!purpose || purpose === 'TEST NOTIFICATION') {
-    doc.line(30, y + 2, 180, y + 2);
+  // Split the purpose text into chunks for the three bullet points
+  let purposeChunks = [];
+  
+  if (purpose.length > 150) {
+    // If the purpose is long, split it into roughly equal parts for the three bullet points
+    const avgChunkSize = Math.ceil(purpose.length / 3);
+    
+    // Find natural break points (spaces) near the desired chunk sizes
+    let startIndex = 0;
+    
+    for (let i = 0; i < 2; i++) { // We need 2 break points for 3 chunks
+      let breakIndex = Math.min(startIndex + avgChunkSize, purpose.length);
+      
+      // Look for a space to break at
+      if (breakIndex < purpose.length) {
+        while (breakIndex > startIndex && purpose[breakIndex] !== ' ') {
+          breakIndex--;
+        }
+        
+        // If we couldn't find a space, just use the calculated break point
+        if (breakIndex === startIndex) {
+          breakIndex = Math.min(startIndex + avgChunkSize, purpose.length);
+        }
+      }
+      
+      purposeChunks.push(purpose.substring(startIndex, breakIndex).trim());
+      startIndex = breakIndex;
+    }
+    
+    // Add the remaining text as the last chunk
+    purposeChunks.push(purpose.substring(startIndex).trim());
+  } else {
+    // If the purpose is short, just use it for the first bullet point
+    purposeChunks = [purpose, '', ''];
   }
   
-  // Add empty bullet points for additional purposes
-  y += 10;
+  // First bullet point
   doc.text('•', 20, y);
+  if (purposeChunks[0]) {
+    // Split long text to fit within the available width
+    const maxWidth = 150;
+    const lines = doc.splitTextToSize(purposeChunks[0], maxWidth);
+    doc.text(lines, 30, y);
+  }
   doc.line(30, y + 2, 180, y + 2);
   
+  // Second bullet point
   y += 10;
   doc.text('•', 20, y);
+  if (purposeChunks[1]) {
+    const maxWidth = 150;
+    const lines = doc.splitTextToSize(purposeChunks[1], maxWidth);
+    doc.text(lines, 30, y);
+  }
+  doc.line(30, y + 2, 180, y + 2);
+  
+  // Third bullet point
+  y += 10;
+  doc.text('•', 20, y);
+  if (purposeChunks[2]) {
+    const maxWidth = 150;
+    const lines = doc.splitTextToSize(purposeChunks[2], maxWidth);
+    doc.text(lines, 30, y);
+  }
   doc.line(30, y + 2, 180, y + 2);
   
   // Add signature line
   y += 20; // Reduced from 30 to save space
+  
+  // Get approver name from all possible sources in the travel request
+  let approverName = '';
+  
+  // First check if there are remarks that contain the approver name and position
+  let approverPosition = '';
+  
+  if (travelRequest.remarks) {
+    // Log the remarks for debugging
+    console.log('Remarks found:', travelRequest.remarks);
+    
+    // Split remarks by newline to get the latest remark (which should be from the approver)
+    const remarkLines = travelRequest.remarks.split('\n');
+    const latestRemark = remarkLines[remarkLines.length - 1]; // Get the last remark
+    
+    // Extract the name and position from the remark - format: "Remark text - User Name (Position)"
+    const remarksMatch = latestRemark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
+    if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
+      approverName = remarksMatch[1].trim();
+      approverPosition = remarksMatch[2].trim();
+      console.log('Name extracted from remarks:', approverName);
+      console.log('Position extracted from remarks:', approverPosition);
+    }
+  }
+  // Check direct approver fields if remarks didn't have the name
+  else if (travelRequest.approver_name) {
+    approverName = travelRequest.approver_name;
+  } 
+  // Check if there's an approver object with a name field
+  else if (travelRequest.approver && travelRequest.approver.name) {
+    approverName = travelRequest.approver.name;
+  }
+  // Check if there's an approved_by field
+  else if (travelRequest.approved_by) {
+    approverName = travelRequest.approved_by;
+  }
+  // Check if there's an approver object with first_name and last_name
+  else if (travelRequest.approver && travelRequest.approver.first_name) {
+    approverName = `${travelRequest.approver.first_name} ${travelRequest.approver.last_name || ''}`;
+  }
+  // Check for admin name in the message field
+  else if (travelRequest.message) {
+    const nameMatch = travelRequest.message.match(/approved by ([\w\s]+)/i);
+    if (nameMatch && nameMatch[1]) {
+      approverName = nameMatch[1].trim();
+    }
+  }
+  // Check if there's an approval_details object with approver_name
+  else if (travelRequest.approval_details && travelRequest.approval_details.approver_name) {
+    approverName = travelRequest.approval_details.approver_name;
+  }
+  // For approved requests without an approver name, use a default
+  else if (travelRequest.status === 'APPROVED') {
+    approverName = 'SCHOOL PRINCIPAL';
+  }
+  
+  // Log approver info for debugging
+  console.log('Approver information:', {
+    approverName,
+    remarks: travelRequest.remarks,
+    message: travelRequest.message,
+    approver: travelRequest.approver,
+    approved_by: travelRequest.approved_by,
+    status: travelRequest.status
+  });
+  
+  // Always display the approver name (even if empty) to ensure consistent positioning
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(approverName, doc.internal.pageSize.width - 40, y - 2, { align: 'center' }); // Moved closer to the line (y-2 instead of y-5)
+  doc.setFont('helvetica', 'normal');
+  
+  // Draw the signature line
   doc.line(doc.internal.pageSize.width - 60, y, doc.internal.pageSize.width - 20, y);
   
   // Add text under signature line
@@ -200,6 +390,41 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   
   // Add position title line
   y += 8;
+  
+  // Get position title from various sources, prioritizing the one extracted from remarks
+  let positionTitle = approverPosition || 
+                      (travelRequest.approver ? travelRequest.approver.position : '') || 
+                      travelRequest.approver_position || 
+                      (travelRequest.approver ? travelRequest.approver.role : '') || 
+                      '';
+  
+  // Check for position in the message field if not found yet
+  if (!positionTitle && travelRequest.message) {
+    const positionMatch = travelRequest.message.match(/position: ([\w\s]+)/i);
+    if (positionMatch && positionMatch[1]) {
+      positionTitle = positionMatch[1].trim();
+    }
+  }
+  
+  // For testing - use a default value if nothing is found
+  if (!positionTitle && approverName === 'SCHOOL PRINCIPAL') {
+    positionTitle = 'SCHOOL PRINCIPAL';
+  }
+  
+  // Log position info for debugging
+  console.log('Position information:', {
+    positionTitle,
+    approverPosition,
+    approverPositionFromObj: travelRequest.approver ? travelRequest.approver.position : null
+  });
+  
+  // Always display the position title (even if empty) to ensure consistent positioning
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(positionTitle, doc.internal.pageSize.width - 40, y - 2, { align: 'center' }); // Moved closer to the line (y-2 instead of y-5)
+  doc.setFont('helvetica', 'normal');
+  
+  // Draw the position title line
   doc.line(doc.internal.pageSize.width - 60, y, doc.internal.pageSize.width - 20, y);
   
   // Add text under position line

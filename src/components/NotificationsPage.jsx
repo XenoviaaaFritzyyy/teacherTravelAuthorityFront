@@ -24,17 +24,45 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
   // Use the new travel authority generator
   const generatePDF = async (notification) => {
     try {
-      // If notification contains only a summary, fetch full travel request data if needed
-      let travelRequest = notification;
-      // If you need to fetch more details, do it here (optional, depending on your backend)
-      // Example: fetch by notification.id or code if needed
-
+      // Extract travel request ID or security code from notification
+      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
+      const securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
+      
+      // Fetch the complete travel request data
+      let travelRequest;
+      const token = localStorage.getItem('accessToken');
+      
+      if (securityCode) {
+        // If we have a security code, use it to fetch the travel request
+        const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        travelRequest = response.data;
+      } else if (notification.travelRequestId) {
+        // If we have a travel request ID, use it
+        const response = await axios.get(`http://localhost:3000/travel-requests/${notification.travelRequestId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        travelRequest = response.data;
+      } else {
+        // Fallback to using the notification data
+        travelRequest = notification;
+      }
+      
+      // Log the travel request data for debugging
+      console.log('Travel request data for PDF:', travelRequest);
+      
       const doc = generateTravelAuthorityPDF(travelRequest);
       // Save the PDF with a meaningful filename
-      doc.save(`travel-authority-${notification.id}.pdf`);
+      doc.save(`travel-authority-${notification.id || 'document'}.pdf`);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
-      showSnackbar('Failed to generate PDF. Please try again.', 'error');
+      // Check if showSnackbar is defined
+      if (typeof showSnackbar === 'function') {
+        showSnackbar('Failed to generate PDF. Please try again.', 'error');
+      } else {
+        console.error('Snackbar function not available');
+      }
     }
   };
 
