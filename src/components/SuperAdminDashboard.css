@@ -621,3 +621,196 @@
     margin-left: auto;
     margin-right: 20px; /* Add margin to the right */
   }
+
+  /* Add these styles after the existing admin-actions styles */
+
+  .icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+  }
+
+  .icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .icon-button.active {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .icon {
+    width: 24px;
+    height: 24px;
+    color: white;
+  }
+
+  /* Add these styles for the travel orders view */
+  .search-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .search-container, .filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .search-container input, .filter-container select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+
+  .orders-container {
+    background-color: #e0f7fa;
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .order-item {
+    background-color: #ffffff;
+    border-radius: 5px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+  }
+
+  .order-item:hover {
+    border-color: #00b4d8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .order-item.expanded {
+    background-color: #f5fcfd;
+    border-color: #00b4d8;
+  }
+
+  .order-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 20px;
+    padding: 10px;
+  }
+
+  .teacher-name {
+    font-weight: bold;
+  }
+
+  .department-info {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+  }
+
+  .order-status-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
+
+  .order-date {
+    text-align: right;
+    color: #666;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-badge.pending {
+    background-color: #f0f0f0;
+    color: #666;
+    border: 1px solid #ddd;
+  }
+
+  .status-badge.validated {
+    background-color: #e6f7e6;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+  }
+
+  .status-badge.rejected {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+  }
+
+  .status-badge.expired {
+    background-color: #e0e0e0;
+    color: #757575;
+    border: 1px solid #bdbdbd;
+  }
+
+  .check-expired-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #0077b6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+  }
+
+  .check-expired-button:hover {
+    background-color: #023e8a;
+  }
+
+  .check-expired-button.loading {
+    background-color: #90e0ef;
+    cursor: not-allowed;
+  }
+
+  .check-expired-button .refresh-icon {
+    animation: none;
+  }
+
+  .check-expired-button.loading .refresh-icon {
+    animation: spin 1.5s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
