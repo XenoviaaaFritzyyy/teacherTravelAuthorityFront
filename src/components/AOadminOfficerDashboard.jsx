@@ -52,6 +52,7 @@ const departments = [
 
 const AOadminOfficerDashboard = () => {
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
   const [travelOrders, setTravelOrders] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("VALIDATED");
@@ -336,40 +337,55 @@ const AOadminOfficerDashboard = () => {
 
   // Handle rejecting a request
   const handleReject = async (id) => {
-    if (!remarkText.trim()) {
-      showSnackbar("Please provide a reason for rejection in the remarks field.", 'warning');
-      return;
-    }
-
     const order = travelOrders.find((o) => o.id === id);
     if (!order) return;
 
-    const oldRemarks = order.remarks || "";
-    const newRemarkWithPosition = appendPositionToRemark(remarkText);
-    const appendedRemarks = combineRemarks(oldRemarks, newRemarkWithPosition);
-
     try {
-      // First add the rejection remark
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/remarks`,
-        { remarks: appendedRemarks },
-        getAuthHeaders()
-      );
+      // Format the remark with user info if provided
+      let updatedRemarks = order.remarks;
+      if (remarkText.trim()) {
+        const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+        updatedRemarks = order.remarks 
+          ? `${order.remarks}\n${newRemarkWithPosition}`
+          : newRemarkWithPosition;
+      }
 
-      // Then reject the request
+      // Reject the request
       await axios.patch(
         `http://localhost:3000/travel-requests/${id}/validate`,
-        { validationStatus: "REJECTED" },
+        { 
+          validationStatus: "REJECTED",
+          remarks: updatedRemarks
+        },
         getAuthHeaders()
       );
 
+      // Update local state
       setTravelOrders((prevOrders) =>
         prevOrders.map((ord) =>
           ord.id === id
-            ? { ...ord, validationStatus: "REJECTED", remarks: appendedRemarks }
+            ? { 
+                ...ord, 
+                validationStatus: "REJECTED",
+                remarks: updatedRemarks
+              }
             : ord
         )
       );
+
+      // Send notification to user about rejection
+      if (order.user && order.user.id) {
+        await axios.post(
+          `http://localhost:3000/notifications`,
+          {
+            userId: order.user.id,
+            message: `Your travel request has been rejected${remarkText.trim() ? `. Reason: ${remarkText.trim()}` : '.'}`,
+            type: 'TRAVEL_REQUEST_REJECTED'
+          },
+          getAuthHeaders()
+        );
+      }
+
       setExpandedId(null);
       setRemarkText("");
       showSnackbar("Travel request rejected successfully!", 'success');
@@ -379,7 +395,44 @@ const AOadminOfficerDashboard = () => {
     }
   };
 
-  // Receipt Modal Component
+  // Add generateReceipt function for paperless functionality
+  const generateReceipt = async (order) => {
+    try {
+      // Generate receipt PDF
+      const doc = generateReceiptPDF(order, getStatusDisplayText);
+      
+      // Save the PDF
+      doc.save(`Travel_Receipt_${order.securityCode || 'document'}.pdf`);
+
+      // Send notification to user about receipt
+      if (order.user && order.user.id) {
+        await axios.post(
+          `http://localhost:3000/travel-requests/${order.id}/receipt`,
+          {
+            message: `Your travel request receipt is ready. Security Code: ${order.securityCode}`
+          },
+          getAuthHeaders()
+        );
+      }
+
+      showSnackbar("Receipt generated and sent successfully!", 'success');
+    } catch (error) {
+      console.error("Failed to generate receipt:", error);
+      showSnackbar("Failed to generate receipt. Please try again.", 'error');
+    }
+  };
+
+  // Add handlePrintReceipt function
+  const handlePrintReceipt = async (order) => {
+    try {
+      await generateReceipt(order);
+    } catch (error) {
+      console.error("Failed to print receipt:", error);
+      showSnackbar("Failed to print receipt. Please try again.", 'error');
+    }
+  };
+
+  // Receipt Modal Component - Now just a summary modal
   const ReceiptModal = ({ show, onClose, data }) => {
     if (!show || !data) return null;
     
@@ -456,8 +509,6 @@ const AOadminOfficerDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      console.log("Travel requests data:", res.data);
-
       const formatted = res.data.map((order) => ({
         id: order.id,
         purpose: order.purpose || "",
@@ -482,10 +533,10 @@ const AOadminOfficerDashboard = () => {
       setTravelOrders(formatted);
       setIsCheckingExpiredCodes(false);
       
-      alert(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`);
+      showSnackbar(`Code expiration check completed! ${response.data.expired} codes marked as expired and ${response.data.cleared} codes cleared.`, 'success');
     } catch (error) {
       console.error("Failed to check expired codes:", error);
-      alert("Failed to check expired codes. Please try again.");
+      showSnackbar("Failed to check expired codes. Please try again.", 'error');
       setIsCheckingExpiredCodes(false);
     }
   };
@@ -678,7 +729,6 @@ const AOadminOfficerDashboard = () => {
                             e.stopPropagation();
                             handleReject(order.id);
                           }}
-                          disabled={!remarkText.trim()}
                         >
                           Reject
                         </button>

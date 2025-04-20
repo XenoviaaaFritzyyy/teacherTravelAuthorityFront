@@ -50,6 +50,7 @@ const departments = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
   const [travelOrders, setTravelOrders] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("PENDING");
@@ -164,8 +165,6 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      console.log("Travel requests data:", res.data);
-
       const formatted = res.data.map((order) => ({
         id: order.id,
         purpose: order.purpose || "",
@@ -389,6 +388,66 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error rejecting travel request:", error);
       showSnackbar("Failed to reject travel request", 'error');
+    }
+  };
+
+  // Add validate function
+  const handleValidate = async (id) => {
+    const order = travelOrders.find((o) => o.id === id);
+    if (!order) return;
+
+    try {
+      // Format the remark with user info if provided
+      let updatedRemarks = order.remarks;
+      if (remarkText.trim()) {
+        const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+        updatedRemarks = order.remarks 
+          ? `${order.remarks}\n${newRemarkWithPosition}`
+          : newRemarkWithPosition;
+      }
+
+      // Validate the request
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/validate`,
+        { 
+          validationStatus: "VALIDATED",
+          remarks: updatedRemarks
+        },
+        getAuthHeaders()
+      );
+
+      // Update local state
+      setTravelOrders((prevOrders) =>
+        prevOrders.map((ord) =>
+          ord.id === id
+            ? { 
+                ...ord, 
+                validationStatus: "VALIDATED",
+                remarks: updatedRemarks
+              }
+            : ord
+        )
+      );
+
+      // Send notification to user about validation
+      if (order.user && order.user.id) {
+        await axios.post(
+          `http://localhost:3000/notifications`,
+          {
+            userId: order.user.id,
+            message: `Your travel request has been validated by ${currentUser?.first_name} ${currentUser?.last_name}.`,
+            type: 'TRAVEL_REQUEST_VALIDATED'
+          },
+          getAuthHeaders()
+        );
+      }
+
+      setExpandedId(null);
+      setRemarkText("");
+      showSnackbar("Travel request validated successfully!", 'success');
+    } catch (error) {
+      console.error("Failed to validate travel request:", error);
+      showSnackbar("Failed to validate travel request. Please try again.", 'error');
     }
   };
 
