@@ -8,6 +8,7 @@ import Navbar from "./Navbar"
 import "./NotificationsPage.css"
 import { generateReceiptPDF, getStatusDisplayText } from "../utils/receiptGenerator"
 import { generateTravelAuthorityPDF } from "../utils/travelAuthorityGenerator"
+import { generateDownloadReceiptPDF } from "../utils/downloadReceiptGenerator"
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const formatDate = (dateString) => {
@@ -91,6 +92,31 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
     }
   };
 
+  const generateDownloadReceiptPDFFromNotification = async (notification) => {
+    try {
+      // Extract security code from the notification message
+      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
+      const securityCode = securityCodeMatch ? securityCodeMatch[1] : 'Unknown';
+      
+      // Fetch the travel request details using the security code
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const travelRequest = response.data;
+      
+      // Generate the download receipt PDF
+      const doc = generateDownloadReceiptPDF(travelRequest);
+      
+      // Save the PDF
+      doc.save(`Download_Receipt_${securityCode}.pdf`);
+    } catch (error) {
+      console.error('Failed to generate download receipt PDF:', error);
+      showSnackbar('Failed to generate download receipt PDF. Please try again.', 'error');
+    }
+  };
+
   const handleDownloadPDF = async (e) => {
     e.stopPropagation(); // Prevent notification from expanding when clicking download
     generatePDF(notification);
@@ -99,6 +125,11 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const handleDownloadReceiptPDF = async (e) => {
     e.stopPropagation(); // Prevent notification from expanding when clicking download
     generateReceiptPDFFromNotification(notification);
+  };
+
+  const handleDownloadNewReceiptPDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    generateDownloadReceiptPDFFromNotification(notification);
   };
 
   return (
@@ -118,9 +149,14 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
             </button>
           )}
           {notification.type === 'TRAVEL_REQUEST_RECEIPT' && (
-            <button className="download-pdf-button receipt" onClick={handleDownloadReceiptPDF}>
-              Download Receipt PDF
-            </button>
+            <>
+              <button className="download-pdf-button receipt" onClick={handleDownloadReceiptPDF}>
+                Download Receipt PDF
+              </button>
+              <button className="download-pdf-button receipt" onClick={handleDownloadNewReceiptPDF}>
+                Download Certificate of Appearance
+              </button>
+            </>
           )}
         </div>
       )}
