@@ -145,7 +145,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           </div>
           {notification.type === 'TRAVEL_REQUEST_APPROVED' && (
             <button className="download-pdf-button" onClick={handleDownloadPDF}>
-              Download Travel Authority PDF
+              Download Authority to Travel PDF
             </button>
           )}
           {notification.type === 'TRAVEL_REQUEST_RECEIPT' && (
