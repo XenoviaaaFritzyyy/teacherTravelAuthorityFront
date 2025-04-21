@@ -311,57 +311,92 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   
   // Get approver name from all possible sources in the travel request
   let approverName = '';
-  
-  // First check if there are remarks that contain the approver name and position
   let approverPosition = '';
+  
+  // We need to find the first approver based on hierarchy
+  // For a teacher, this would be the Principal
+  // For a principal, this would be the PSDS, etc.
   
   if (travelRequest.remarks) {
     // Log the remarks for debugging
     console.log('Remarks found:', travelRequest.remarks);
     
-    // Split remarks by newline to get the latest remark (which should be from the approver)
+    // Split remarks by newline to get all remarks
     const remarkLines = travelRequest.remarks.split('\n');
-    const latestRemark = remarkLines[remarkLines.length - 1]; // Get the last remark
     
-    // Extract the name and position from the remark - format: "Remark text - User Name (Position)"
-    const remarksMatch = latestRemark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
-    if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
-      approverName = remarksMatch[1].trim();
-      approverPosition = remarksMatch[2].trim();
-      console.log('Name extracted from remarks:', approverName);
-      console.log('Position extracted from remarks:', approverPosition);
+    // Look for the first remark that contains an approver information
+    // This would be the first approver in the hierarchy
+    for (const remark of remarkLines) {
+      // Extract the name and position from the remark - format: "Remark text - User Name (Position)"
+      const remarksMatch = remark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
+      if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
+        // Check if this is a principal, PSDS, or other first-level approver
+        const position = remarksMatch[2].trim().toUpperCase();
+        if (position.includes('PRINCIPAL') || position.includes('PSDS') || 
+            position.includes('HEAD') || position.includes('SUPERVISOR')) {
+          approverName = remarksMatch[1].trim();
+          approverPosition = remarksMatch[2].trim();
+          console.log('First approver found in remarks:', approverName, approverPosition);
+          break; // Found the first approver, no need to continue
+        }
+      }
+    }
+    
+    // If no specific first approver was found, fall back to the first remark
+    if (!approverName && remarkLines.length > 0) {
+      const firstRemark = remarkLines[0];
+      const remarksMatch = firstRemark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
+      if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
+        approverName = remarksMatch[1].trim();
+        approverPosition = remarksMatch[2].trim();
+        console.log('Using first remark as approver:', approverName, approverPosition);
+      }
     }
   }
-  // Check direct approver fields if remarks didn't have the name
-  else if (travelRequest.approver_name) {
-    approverName = travelRequest.approver_name;
-  } 
-  // Check if there's an approver object with a name field
-  else if (travelRequest.approver && travelRequest.approver.name) {
-    approverName = travelRequest.approver.name;
-  }
-  // Check if there's an approved_by field
-  else if (travelRequest.approved_by) {
-    approverName = travelRequest.approved_by;
-  }
-  // Check if there's an approver object with first_name and last_name
-  else if (travelRequest.approver && travelRequest.approver.first_name) {
-    approverName = `${travelRequest.approver.first_name} ${travelRequest.approver.last_name || ''}`;
-  }
-  // Check for admin name in the message field
-  else if (travelRequest.message) {
-    const nameMatch = travelRequest.message.match(/approved by ([\w\s]+)/i);
-    if (nameMatch && nameMatch[1]) {
-      approverName = nameMatch[1].trim();
+  
+  // If no approver found in remarks, check other fields
+  if (!approverName) {
+    // Check if there's a user role to determine the likely approver
+    if (travelRequest.user && travelRequest.user.role) {
+      const userRole = travelRequest.user.role.toUpperCase();
+      
+      // Based on user role, set the appropriate first approver title
+      if (userRole.includes('TEACHER')) {
+        approverName = 'SCHOOL PRINCIPAL';
+        approverPosition = 'Principal';
+      } else if (userRole.includes('PRINCIPAL')) {
+        approverName = 'PUBLIC SCHOOLS DISTRICT SUPERVISOR';
+        approverPosition = 'PSDS';
+      } else if (userRole.includes('PSDS')) {
+        approverName = 'ASSISTANT SCHOOLS DIVISION SUPERINTENDENT';
+        approverPosition = 'ASDS';
+      } else {
+        // Default fallback
+        approverName = 'SCHOOL PRINCIPAL';
+        approverPosition = 'Principal';
+      }
+    } else {
+      // Check direct approver fields if user role is not available
+      if (travelRequest.approver_name) {
+        approverName = travelRequest.approver_name;
+      } 
+      // Check if there's an approver object with a name field
+      else if (travelRequest.approver && travelRequest.approver.name) {
+        approverName = travelRequest.approver.name;
+      }
+      // Check if there's an approved_by field
+      else if (travelRequest.approved_by) {
+        approverName = travelRequest.approved_by;
+      }
+      // Check if there's an approver object with first_name and last_name
+      else if (travelRequest.approver && travelRequest.approver.first_name) {
+        approverName = `${travelRequest.approver.first_name} ${travelRequest.approver.last_name || ''}`;
+      }
+      // For approved requests without an approver name, use a default
+      else if (travelRequest.status === 'APPROVED') {
+        approverName = 'SCHOOL PRINCIPAL';
+      }
     }
-  }
-  // Check if there's an approval_details object with approver_name
-  else if (travelRequest.approval_details && travelRequest.approval_details.approver_name) {
-    approverName = travelRequest.approval_details.approver_name;
-  }
-  // For approved requests without an approver name, use a default
-  else if (travelRequest.status === 'APPROVED') {
-    approverName = 'SCHOOL PRINCIPAL';
   }
   
   // Log approver info for debugging
