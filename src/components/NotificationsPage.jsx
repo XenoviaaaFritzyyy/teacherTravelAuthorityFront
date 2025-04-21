@@ -12,6 +12,19 @@ import { generateDownloadReceiptPDF } from "../utils/downloadReceiptGenerator"
 import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppearanceGenerator'
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
+  // Debug: Log each notification as it's rendered
+  // Check if this is an administrative officer approval based on the message
+  const isAdminApproval = notification.message && 
+    notification.message.includes('emergency purposes until your travel end date');
+  
+  console.log('Rendering notification:', { 
+    id: notification.id,
+    type: notification.type, 
+    message: notification.message,
+    includes_certificate: notification.message && notification.message.includes('Certificate of Appearance'),
+    isAdminApproval: isAdminApproval
+  });
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -64,10 +77,92 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
     }
   };
 
+  const handleDownloadPDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    generatePDF(notification);
+  };
+
+  const handleDownloadCertificateOfAppearancePDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    // Extract security code from notification message
+    const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
+    const securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
+    
+    if (!securityCode) {
+      showSnackbar('Could not find security code in notification', 'error');
+      return;
+    }
+    
+    try {
+      // Fetch the travel request details using the security code
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const travelRequest = response.data;
+      console.log('Travel request data for Certificate of Appearance:', travelRequest);
+      
+      // Generate the certificate of appearance PDF
+      const doc = generateDownloadReceiptPDF(travelRequest);
+      
+      // Open the PDF in a new window for preview
+      const pdfData = doc.output('datauristring');
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>Certificate of Appearance</title>
+            </head>
+            <body style="margin:0;padding:0;">
+              <embed width="100%" height="100%" src="${pdfData}" type="application/pdf">
+            </body>
+          </html>
+        `);
+      } else {
+        // If popup is blocked, just save the PDF
+        doc.save(`Certificate_of_Appearance_${securityCode}.pdf`);
+        showSnackbar('PDF saved. If you want to preview it, please allow popups for this site.', 'info');
+      }
+    } catch (error) {
+      console.error('Failed to generate certificate of appearance PDF:', error);
+      showSnackbar('Failed to generate certificate of appearance PDF. Please try again.', 'error');
+    }
+  };
+
+  const handleDownloadReceiptPDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    generateReceiptPDFFromNotification(notification);
+  };
+
+  const handleDownloadNewReceiptPDF = async (e) => {
+    e.stopPropagation(); // Prevent notification from expanding when clicking download
+    generateDownloadReceiptPDFFromNotification(notification);
+  };
+
   return (
     <div className={`notification-item ${isExpanded ? "expanded" : ""} ${!notification.isRead ? "unread" : ""}`} onClick={onClick}>
       <div className="notification-header">
-        <span className="notification-type">{notification.type.replace(/_/g, ' ')}</span>
+        <span className="notification-type">
+          {(() => {
+            if (
+              notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' ||
+              notification.type === 'ADMINISTRATIVE_OFFICER_APPROVAL' ||
+              (notification.message && notification.message.includes('Certificate of Appearance'))
+            ) {
+              return 'CERTIFICATE OF APPEARANCE APPROVED';
+            }
+            if (
+              notification.type === 'AUTHORITY_TO_TRAVEL_APPROVED' ||
+              (notification.type === 'TRAVEL_REQUEST_APPROVED' &&
+                !(notification.message && notification.message.includes('Certificate of Appearance')))
+            ) {
+              return 'AUTHORITY TO TRAVEL APPROVED';
+            }
+            return notification.type.replace(/_/g, ' ');
+          })()}
+        </span>
         <span className="date">{formatDate(notification.createdAt)}</span>
       </div>
       {isExpanded && (
@@ -75,13 +170,30 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           <div className="message">
             <p>{notification.message}</p>
           </div>
-          {(notification.type === 'TRAVEL_REQUEST_COMPLETED' || 
-            notification.type === 'TRAVEL_REQUEST_APPROVED' || 
-            notification.type === 'TRAVEL_REQUEST_RECEIPT') && (
-            <button className="download-pdf-button" onClick={handleDownloadPDF}>
-              Download {notification.type === 'TRAVEL_REQUEST_COMPLETED' ? 'Certificate of Appearance' : 
-                      notification.type === 'TRAVEL_REQUEST_APPROVED' ? 'Authority to Travel' : 'Receipt'} PDF
-            </button>
+          {notification.type === 'AUTHORITY_TO_TRAVEL_APPROVED' && (
+            <>
+              <button className="download-pdf-button" onClick={handleDownloadPDF}>
+                Download Authority to Travel PDF
+              </button>
+            </>
+          )}
+          {(notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' || notification.type === 'ADMINISTRATIVE_OFFICER_APPROVAL') && (
+            <>
+              <button className="download-pdf-button" onClick={handleDownloadCertificateOfAppearancePDF}>
+                Download Certificate of Appearance PDF
+              </button>
+            </>
+          )}
+          {/* No download buttons for TRAVEL_REQUEST_VALIDATED */}
+          {notification.type === 'TRAVEL_REQUEST_RECEIPT' && (
+            <>
+              <button className="download-pdf-button receipt" onClick={handleDownloadReceiptPDF}>
+                Download Receipt PDF
+              </button>
+              <button className="download-pdf-button receipt" onClick={handleDownloadNewReceiptPDF}>
+                Download Certificate of Appearance
+              </button>
+            </>
           )}
         </div>
       )}
@@ -113,6 +225,14 @@ const NotificationsPage = () => {
       });
       
       const { notifications: fetchedNotifications, total } = response.data;
+      
+      // Debug: Log all notification types and messages
+      console.log('Fetched notifications:', fetchedNotifications.map(n => ({ 
+        id: n.id,
+        type: n.type, 
+        message: n.message,
+        createdAt: n.createdAt
+      })));
       
       let updatedNotifications;
       if (append) {
