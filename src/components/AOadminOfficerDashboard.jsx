@@ -8,6 +8,7 @@ import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provid
 import "./AOadminOfficerDashboard.css";
 import jsPDF from 'jspdf';
 import { formatDate, generateReceiptPDF, getStatusBadgeClass, getStatusDisplayText } from "../utils/receiptGenerator";
+import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppearanceGenerator';
 
 const departments = [
   "Accounting",
@@ -71,6 +72,14 @@ const AOadminOfficerDashboard = () => {
   // Add user state at the top with other state declarations
   const [currentUser, setCurrentUser] = useState(null);
 
+  const [validationSummary, setValidationSummary] = useState({
+    total: 0,
+    pending: 0,
+    validated: 0,
+    rejected: 0,
+    expired: 0
+  });
+
   useEffect(() => {
     // Fetch current user's profile and set userPosition
     const fetchCurrentUser = async () => {
@@ -126,6 +135,34 @@ const AOadminOfficerDashboard = () => {
     fetchCurrentUser();
     fetchTravelOrders();
   }, []);
+
+  useEffect(() => {
+    const calculateSummary = () => {
+      const summary = {
+        total: travelOrders.length,
+        pending: 0,
+        validated: 0,
+        rejected: 0,
+        expired: 0
+      };
+
+      travelOrders.forEach(order => {
+        if (order.isCodeExpired) {
+          summary.expired++;
+        } else if (order.validationStatus === 'VALIDATED') {
+          summary.validated++;
+        } else if (order.validationStatus === 'REJECTED') {
+          summary.rejected++;
+        } else {
+          summary.pending++;
+        }
+      });
+
+      setValidationSummary(summary);
+    };
+
+    calculateSummary();
+  }, [travelOrders]);
 
   // Helper: Returns auth headers
   const getAuthHeaders = () => {
@@ -293,45 +330,66 @@ const AOadminOfficerDashboard = () => {
   }
 
   // Validate and generate receipt for a travel request
-  const validateAndGenerateReceipt = async (order) => {
+  const handleValidate = async (id) => {
     try {
-      // First validate the request
-      const validationResponse = await axios.patch(
-        `http://localhost:3000/travel-requests/${order.id}/validate`,
-        { validationStatus: "VALIDATED" },
-        getAuthHeaders()
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        showSnackbar('Authentication token not found', 'error');
+        return;
+      }
+
+      const order = travelOrders.find(o => o.id === id);
+      if (!order) {
+        showSnackbar('Could not find travel order', 'error');
+        return;
+      }
+
+      // Format the remark with user info if provided
+      let updatedRemarks = order.remarks;
+      if (remarkText.trim()) {
+        const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+        updatedRemarks = order.remarks 
+          ? `${order.remarks}\n${newRemarkWithPosition}`
+          : newRemarkWithPosition;
+      }
+
+      const response = await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/validate`,
+        { 
+          validationStatus: 'VALIDATED',
+          remarks: updatedRemarks
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (validationResponse.data) {
-        // Update the order with the validation response data
-        const updatedOrder = {
-          ...order,
-          ...validationResponse.data,
-          validationStatus: "VALIDATED"
-        };
-
-        // Show validation summary modal
-        setReceiptData(updatedOrder);
-        setShowReceiptModal(true);
-
-        // Update local state
-        setTravelOrders((prevOrders) =>
-          prevOrders.map((ord) =>
-            ord.id === order.id
-              ? updatedOrder
-              : ord
+      if (response.data) {
+        // Update the local state to reflect the validation
+        setTravelOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === id
+              ? { ...order, validationStatus: 'VALIDATED', remarks: updatedRemarks }
+              : order
           )
         );
 
-        showSnackbar("Travel request validated successfully!", 'success');
+        // Send notification to the user
+        if (order.user && order.user.id) {
+          await axios.post(
+            `http://localhost:3000/travel-requests/${id}/receipt`,
+            {
+              message: `Your travel request has been approved by ${currentUser?.first_name} ${currentUser?.last_name}. Security Code: ${order.securityCode}`
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        }
+
+        setExpandedId(null);
+        setRemarkText("");
+        showSnackbar('Travel request validated successfully', 'success');
       }
     } catch (error) {
-      console.error("Failed to validate request:", error);
-      if (error.response?.status === 403) {
-        showSnackbar("You don't have permission to validate this request. Please contact your administrator.", 'error');
-      } else {
-        showSnackbar("Failed to validate request. Please try again.", 'error');
-      }
+      console.error('Error validating request:', error);
+      showSnackbar('Failed to validate the request', 'error');
     }
   };
 
@@ -565,6 +623,28 @@ const AOadminOfficerDashboard = () => {
         </div>
       </header>
       <div className="admin-container">
+        <div className="validation-summary">
+          <div className="summary-card">
+            <h3>Total Requests</h3>
+            <p>{validationSummary.total}</p>
+          </div>
+          <div className="summary-card pending">
+            <h3>Pending</h3>
+            <p>{validationSummary.pending}</p>
+          </div>
+          <div className="summary-card validated">
+            <h3>Validated</h3>
+            <p>{validationSummary.validated}</p>
+          </div>
+          <div className="summary-card rejected">
+            <h3>Rejected</h3>
+            <p>{validationSummary.rejected}</p>
+          </div>
+          <div className="summary-card expired">
+            <h3>Expired</h3>
+            <p>{validationSummary.expired}</p>
+          </div>
+        </div>
         <div className="search-filter-container">
           <div className="search-container">
             <label htmlFor="search">Search:</label>
@@ -718,7 +798,7 @@ const AOadminOfficerDashboard = () => {
                           className="validate-button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            validateAndGenerateReceipt(order);
+                            handleValidate(order.id);
                           }}
                         >
                           APPROVE

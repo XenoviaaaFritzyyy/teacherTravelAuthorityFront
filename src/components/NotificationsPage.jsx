@@ -9,6 +9,7 @@ import "./NotificationsPage.css"
 import { generateReceiptPDF, getStatusDisplayText } from "../utils/receiptGenerator"
 import { generateTravelAuthorityPDF } from "../utils/travelAuthorityGenerator"
 import { generateDownloadReceiptPDF } from "../utils/downloadReceiptGenerator"
+import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppearanceGenerator'
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
   // Add useSnackbar hook to access the showSnackbar function
@@ -41,6 +42,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const handleDownloadPDF = async (e) => {
     e.stopPropagation(); // Prevent notification from expanding when clicking download
     try {
+      // Extract security code from notification message
       // Extract security code from notification message
       const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
       const securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
@@ -85,10 +87,13 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
       
       // Fetch the travel request details using the security code
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
+      const response = await axios.get(
+        `http://localhost:3000/travel-requests/by-code/${securityCode}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
       const travelRequest = response.data;
       console.log('Travel request data for Certificate of Appearance:', travelRequest);
       
@@ -238,8 +243,8 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 const NotificationsPage = () => {
   const [expandedId, setExpandedId] = useState(null)
