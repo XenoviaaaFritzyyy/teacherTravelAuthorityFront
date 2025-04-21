@@ -9,6 +9,7 @@ import "./NotificationsPage.css"
 import { generateReceiptPDF, getStatusDisplayText } from "../utils/receiptGenerator"
 import { generateTravelAuthorityPDF } from "../utils/travelAuthorityGenerator"
 import { generateDownloadReceiptPDF } from "../utils/downloadReceiptGenerator"
+import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppearanceGenerator'
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const formatDate = (dateString) => {
@@ -22,114 +23,45 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
     });
   };
 
-  // Use the new travel authority generator
-  const generatePDF = async (notification) => {
+  const handleDownloadPDF = async (e) => {
+    e.stopPropagation();
     try {
-      // Extract travel request ID or security code from notification
+      // Extract security code from notification message
       const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
       const securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
       
-      // Fetch the complete travel request data
-      let travelRequest;
-      const token = localStorage.getItem('accessToken');
-      
-      if (securityCode) {
-        // If we have a security code, use it to fetch the travel request
-        const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        travelRequest = response.data;
-      } else if (notification.travelRequestId) {
-        // If we have a travel request ID, use it
-        const response = await axios.get(`http://localhost:3000/travel-requests/${notification.travelRequestId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        travelRequest = response.data;
-      } else {
-        // Fallback to using the notification data
-        travelRequest = notification;
+      if (!securityCode) {
+        showSnackbar("Security code not found in notification", "error");
+        return;
       }
-      
-      // Log the travel request data for debugging
-      console.log('Travel request data for PDF:', travelRequest);
-      
-      const doc = generateTravelAuthorityPDF(travelRequest);
-      // Save the PDF with a meaningful filename
-      doc.save(`travel-authority-${notification.id || 'document'}.pdf`);
-    } catch (error) {
-      console.error('Failed to generate PDF:', error);
-      // Check if showSnackbar is defined
-      if (typeof showSnackbar === 'function') {
-        showSnackbar('Failed to generate PDF. Please try again.', 'error');
-      } else {
-        console.error('Snackbar function not available');
+
+      // Fetch travel request data
+      const token = localStorage.getItem('accessToken');
+      const response = await axios.get(
+        `http://localhost:3000/travel-requests/by-code/${securityCode}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      const travelRequest = response.data;
+
+      // Generate appropriate PDF based on notification type
+      let doc;
+      if (notification.type === 'TRAVEL_REQUEST_COMPLETED') {
+        doc = generateCertificateOfAppearancePDF(travelRequest);
+        doc.save(`Certificate_of_Appearance_${securityCode}.pdf`);
+      } else if (notification.type === 'TRAVEL_REQUEST_APPROVED') {
+        doc = generateTravelAuthorityPDF(travelRequest);
+        doc.save(`Authority_to_Travel_${securityCode}.pdf`);
+      } else if (notification.type === 'TRAVEL_REQUEST_RECEIPT') {
+        doc = generateDownloadReceiptPDF(travelRequest);
+        doc.save(`Travel_Receipt_${securityCode}.pdf`);
       }
-    }
-  };
-
-  const generateReceiptPDFFromNotification = async (notification) => {
-    try {
-      // Extract security code from the notification message
-      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
-      const securityCode = securityCodeMatch ? securityCodeMatch[1] : 'Unknown';
-      
-      // Fetch the travel request details using the security code
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const travelRequest = response.data;
-      
-      // Generate the receipt PDF
-      const doc = generateReceiptPDF(travelRequest, getStatusDisplayText);
-      
-      // Save the PDF
-      doc.save(`Travel_Receipt_${securityCode}.pdf`);
     } catch (error) {
-      console.error('Failed to generate receipt PDF:', error);
-      showSnackbar('Failed to generate receipt PDF. Please try again.', 'error');
+      console.error('Error generating PDF:', error);
+      showSnackbar('Failed to generate PDF. Please try again.', 'error');
     }
-  };
-
-  const generateDownloadReceiptPDFFromNotification = async (notification) => {
-    try {
-      // Extract security code from the notification message
-      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
-      const securityCode = securityCodeMatch ? securityCodeMatch[1] : 'Unknown';
-      
-      // Fetch the travel request details using the security code
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const travelRequest = response.data;
-      
-      // Generate the download receipt PDF
-      const doc = generateDownloadReceiptPDF(travelRequest);
-      
-      // Save the PDF
-      doc.save(`Download_Receipt_${securityCode}.pdf`);
-    } catch (error) {
-      console.error('Failed to generate download receipt PDF:', error);
-      showSnackbar('Failed to generate download receipt PDF. Please try again.', 'error');
-    }
-  };
-
-  const handleDownloadPDF = async (e) => {
-    e.stopPropagation(); // Prevent notification from expanding when clicking download
-    generatePDF(notification);
-  };
-
-  const handleDownloadReceiptPDF = async (e) => {
-    e.stopPropagation(); // Prevent notification from expanding when clicking download
-    generateReceiptPDFFromNotification(notification);
-  };
-
-  const handleDownloadNewReceiptPDF = async (e) => {
-    e.stopPropagation(); // Prevent notification from expanding when clicking download
-    generateDownloadReceiptPDFFromNotification(notification);
   };
 
   return (
@@ -143,26 +75,19 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           <div className="message">
             <p>{notification.message}</p>
           </div>
-          {notification.type === 'TRAVEL_REQUEST_APPROVED' && (
+          {(notification.type === 'TRAVEL_REQUEST_COMPLETED' || 
+            notification.type === 'TRAVEL_REQUEST_APPROVED' || 
+            notification.type === 'TRAVEL_REQUEST_RECEIPT') && (
             <button className="download-pdf-button" onClick={handleDownloadPDF}>
-              Download Authority to Travel PDF
+              Download {notification.type === 'TRAVEL_REQUEST_COMPLETED' ? 'Certificate of Appearance' : 
+                      notification.type === 'TRAVEL_REQUEST_APPROVED' ? 'Authority to Travel' : 'Receipt'} PDF
             </button>
-          )}
-          {notification.type === 'TRAVEL_REQUEST_RECEIPT' && (
-            <>
-              <button className="download-pdf-button receipt" onClick={handleDownloadReceiptPDF}>
-                Download Receipt PDF
-              </button>
-              <button className="download-pdf-button receipt" onClick={handleDownloadNewReceiptPDF}>
-                Download Certificate of Appearance
-              </button>
-            </>
           )}
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 const NotificationsPage = () => {
   const [expandedId, setExpandedId] = useState(null)

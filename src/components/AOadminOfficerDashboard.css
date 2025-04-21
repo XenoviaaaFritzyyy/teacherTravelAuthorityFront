@@ -560,3 +560,57 @@
   background-color: #cccccc;
   cursor: not-allowed;
 }
+
+.validation-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card {
+  flex: 1;
+  padding: 1.5rem;
+  text-align: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+}
+
+.summary-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #6c757d;
+}
+
+.summary-card p {
+  margin: 0.5rem 0 0;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #212529;
+}
+
+.summary-card.pending {
+  border-top: 4px solid #ffc107;
+}
+
+.summary-card.validated {
+  border-top: 4px solid #28a745;
+}
+
+.summary-card.rejected {
+  border-top: 4px solid #dc3545;
+}
+
+.summary-card.expired {
+  border-top: 4px solid #6c757d;
+}
