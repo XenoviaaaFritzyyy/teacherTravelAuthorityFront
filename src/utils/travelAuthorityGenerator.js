@@ -147,10 +147,15 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   doc.setFontSize(8);
   doc.text('(Name of office or place to visit)', (departmentLineStartX + departmentLineEndX) / 2, y, { align: 'center' });
   
-  // Add date of travel
+  // Add date of travel - completely restructured to avoid overlapping
   y += 10;
   doc.setFontSize(10);
+  
+  // First line: "on" with the date
   doc.text('on', 20, y);
+  
+  // Calculate position after "on"
+  const travelDateX = 20 + doc.getTextWidth('on ');
   
   // Format travel date range
   let travelDate = '';
@@ -180,9 +185,6 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
     travel_date: travelRequest.travel_date
   });
   
-  // Calculate position after "on"
-  const travelDateX = 20 + doc.getTextWidth('on ');
-  
   // Use a slightly smaller font size for the date range to ensure it fits
   const originalFontSize = doc.getFontSize();
   if (travelDate.length > 25) { // If it's a long date range
@@ -202,14 +204,15 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   doc.setLineWidth(0.1);
   doc.line(travelDateX, y + 1, travelDateX + travelDateWidth, y + 1);
   
-  // Add text for official transactions on the same line
-  const transactionTextX = travelDateX + travelDateWidth + 5;
-  doc.text(', to do the following official transactions:', transactionTextX, y);
-  
   // Add small text under the date line
   y += 5;
   doc.setFontSize(8);
   doc.text('(Date of actual travel)', travelDateX + (travelDateWidth / 2), y, { align: 'center' });
+  
+  // Add text for official transactions on a new line rather than same line to prevent overlap
+  y += 8;
+  doc.setFontSize(10);
+  doc.text(', to do the following official transactions:', 20, y);
   
   // Add bullet points for purpose
   y += 10;
@@ -460,6 +463,10 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   
   y += 4; // Reduced from 5
   doc.text('* Not valid with erasures, superimpositions, and alterations.', 15, y);
+  
+  // Add electronic generation note
+  y += 4;
+  doc.text('* This is electronically generated.', 15, y);
   
   // Add footer with contact information - more compact layout
   y += 8; // Reduced from 10

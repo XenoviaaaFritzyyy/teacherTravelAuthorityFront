@@ -115,7 +115,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   const signX = doc.internal.pageSize.width - 100;
   doc.line(signX, y, doc.internal.pageSize.width - 35, y);
 
-  // Fetch Administrative Officer name and position (COA signatory)
+  // Fetch Administrative Officer name and position
   let approverName = '';
   let approverPosition = '';
   // 1. Strictly check explicit AO fields
@@ -135,7 +135,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
     let foundExplicitAO = false;
     for (let i = remarkLines.length - 1; i >= 0; i--) {
       const remark = remarkLines[i];
-      const match = remark.match(/-\s+([a-zA-Z]+\s+[a-zA-Z]+)\s*\(([^)]*)\)$/);
+      const match = remark.match(/-\s+([a-zA-Z ]+)\s*\(([^)]*)\)$/);
       if (match && match[1] && match[2]) {
         const foundName = match[1].trim();
         const foundPosition = match[2].trim();
@@ -151,7 +151,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
     if (!foundExplicitAO) {
       for (let i = remarkLines.length - 1; i >= 0; i--) {
         const remark = remarkLines[i];
-        const match = remark.match(/-\s+([a-zA-Z]+\s+[a-zA-Z]+)\s*\(([^)]*)\)$/);
+        const match = remark.match(/-\s+([a-zA-Z ]+)\s*\(([^)]*)\)$/);
         if (match && match[1] && match[2]) {
           const foundName = match[1].trim();
           const foundPosition = match[2].toLowerCase();
@@ -201,7 +201,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   y += 10;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
-  doc.text('Note: Not valid with erasures, superimpositions or alterations.', 45, y);
+  doc.text('Note: This is electronically generated. Not valid with erasures, superimpositions or alterations.', 35, y);
   
   // Add much more space before the footer line to prevent overlap
   y += 90;
