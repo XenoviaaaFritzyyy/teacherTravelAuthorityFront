@@ -180,20 +180,38 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
       <div className="notification-header">
         <span className="notification-type">
           {(() => {
-            if (
-              notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' ||
-              notification.type === 'ADMINISTRATIVE_OFFICER_APPROVAL' ||
-              (notification.message && notification.message.includes('Certificate of Appearance'))
-            ) {
-              return 'CERTIFICATE OF APPEARANCE APPROVED';
-            }
-            if (
+            // Check if this is an AO admin officer approval
+            const isAdminApproval = notification.type === 'TRAVEL_REQUEST_APPROVED' && 
+              notification.message && 
+              notification.message.includes('emergency purposes until your travel end date');
+            
+            // Check if this is a certificate of appearance notification
+            const isCertificate = notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' ||
+              notification.type === 'TRAVEL_REQUEST_RECEIPT' ||
+              (notification.message && notification.message.includes('Certificate of Appearance'));
+            
+            // Check if this is an authority to travel notification
+            // Important: Do NOT consider it an authority notification if it's an admin approval
+            const isAuthority = !isAdminApproval && (
               notification.type === 'AUTHORITY_TO_TRAVEL_APPROVED' ||
               (notification.type === 'TRAVEL_REQUEST_APPROVED' &&
-                !(notification.message && notification.message.includes('Certificate of Appearance')))
-            ) {
+                !(notification.message && notification.message.includes('Certificate of Appearance')) &&
+                !notification.message.includes('emergency purposes until your travel end date'))
+            );
+            
+            // Determine the display text based on the conditions
+            if (isAdminApproval) {
+              return 'CERTIFICATE OF APPEARANCE APPROVED';
+            } else if (isCertificate && isAuthority) {
+              return 'TRAVEL DOCUMENTS APPROVED';
+            } else if (isCertificate) {
+              return 'CERTIFICATE OF APPEARANCE APPROVED';
+            } else if (isAuthority) {
               return 'AUTHORITY TO TRAVEL APPROVED';
+            } else if (notification.type === 'TRAVEL_REQUEST_VALIDATED') {
+              return 'TRAVEL REQUEST VALIDATED';
             }
+            
             return notification.type.replace(/_/g, ' ');
           })()}
         </span>
@@ -204,24 +222,24 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           <div className="message">
             <p>{notification.message}</p>
           </div>
+          {/* Only show Authority to Travel buttons for hierarchy approvals */}
           {(notification.type === 'AUTHORITY_TO_TRAVEL_APPROVED' || 
-             notification.type === 'TRAVEL_REQUEST_APPROVED' ||
-             (notification.message && notification.message.includes('travel request has been approved') && 
-              !notification.message.includes('Certificate of Appearance'))) && (
+             (notification.type === 'TRAVEL_REQUEST_APPROVED' &&
+              !notification.message.includes('Certificate of Appearance') &&
+              !notification.message.includes('receipt is ready') &&
+              !notification.message.includes('emergency purposes until your travel end date'))) && (
             <>
               <button className="download-pdf-button" onClick={handleDownloadPDF}>
                 Download Authority to Travel PDF
               </button>
-              <button className="download-pdf-button" onClick={handleDownloadCertificateOfAppearancePDF}>
-                Download Certificate of Appearance PDF
-              </button>
             </>
           )}
           {/* Only show Certificate button alone for Certificate-specific notifications */}
-          {((notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' || 
-             notification.type === 'ADMINISTRATIVE_OFFICER_APPROVAL') &&
-             !(notification.type === 'AUTHORITY_TO_TRAVEL_APPROVED' || 
-             notification.type === 'TRAVEL_REQUEST_APPROVED')) && (
+          {(notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' || 
+             (notification.type === 'TRAVEL_REQUEST_APPROVED' && 
+              notification.message && 
+              notification.message.includes('emergency purposes until your travel end date')) ||
+             notification.type === 'TRAVEL_REQUEST_RECEIPT') && (
             <>
               <button className="download-pdf-button" onClick={handleDownloadCertificateOfAppearancePDF}>
                 Download Certificate of Appearance PDF
@@ -279,12 +297,60 @@ const NotificationsPage = () => {
         createdAt: n.createdAt
       })));
       
+      // Filter out duplicate notifications
+      // Find all admin approval notifications (containing "emergency purposes until your travel end date")
+      const adminApprovals = fetchedNotifications.filter(n => 
+        n.type === 'TRAVEL_REQUEST_APPROVED' && 
+        n.message && 
+        n.message.includes('emergency purposes until your travel end date')
+      );
+      
+      // For each admin approval, extract the security code to identify related notifications
+      const securityCodes = adminApprovals.map(n => {
+        const match = n.message.match(/Security Code: ([A-Z0-9]+)/);
+        return match ? match[1] : null;
+      }).filter(Boolean);
+      
+      // Filter out "Authority to Travel Approved" notifications that have the same security code
+      // as any admin approval notification
+      const filteredNotifications = fetchedNotifications.filter(n => {
+        // Always keep admin approval notifications (Certificate of Appearance Approved)
+        if (n.type === 'TRAVEL_REQUEST_APPROVED' && 
+            n.message && 
+            n.message.includes('emergency purposes until your travel end date')) {
+          return true;
+        }
+        
+        // Check if this is an "Authority to Travel" notification
+        const isAuthorityNotification = 
+          n.type === 'AUTHORITY_TO_TRAVEL_APPROVED' || 
+          (n.type === 'TRAVEL_REQUEST_APPROVED' && 
+           !n.message.includes('Certificate of Appearance') &&
+           !n.message.includes('emergency purposes until your travel end date'));
+        
+        // If it's an authority notification, check if it has a security code that matches
+        // any of our admin approval notifications - if so, remove it completely
+        if (isAuthorityNotification) {
+          const match = n.message.match(/Security Code: ([A-Z0-9]+)/);
+          const code = match ? match[1] : null;
+          
+          // If the code is in our list of admin approval codes, filter it out
+          if (code && securityCodes.includes(code)) {
+            console.log(`Filtering out Authority to Travel notification with code ${code} as admin approval exists`);
+            return false;
+          }
+        }
+        
+        // Keep all other notifications
+        return true;
+      });
+      
       let updatedNotifications;
       if (append) {
-        updatedNotifications = [...notifications, ...fetchedNotifications];
+        updatedNotifications = [...notifications, ...filteredNotifications];
         setNotifications(updatedNotifications);
       } else {
-        updatedNotifications = fetchedNotifications;
+        updatedNotifications = filteredNotifications;
         setNotifications(updatedNotifications);
       }
       
