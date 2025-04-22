@@ -65,6 +65,10 @@ const AOadminOfficerDashboard = () => {
   const [activeView, setActiveView] = useState("orders");
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  
+  // Add new state for confirmation modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmOrderData, setConfirmOrderData] = useState(null);
 
   // Current user's position state
   const [userPosition, setUserPosition] = useState("");
@@ -232,6 +236,39 @@ const AOadminOfficerDashboard = () => {
     );
   }
 
+  // Update this helper function to check if at least one department has added remarks
+  const checkAnyDepartmentRemarks = (order) => {
+    if (!order.department || !order.remarks) return false;
+    
+    // Get array of departments
+    const departments = Array.isArray(order.department) 
+      ? order.department 
+      : order.department.split(',').map(d => d.trim());
+    
+    if (departments.length === 0) return false;
+    
+    // Get array of remarks (each remark should include the department name in parentheses)
+    const remarksList = order.remarks.split('\n')
+      .map(remark => remark.trim())
+      .filter(remark => remark.length > 0);
+    
+    // Extract the department name from each remark line using regex
+    const remarkedDepartments = new Set(
+      remarksList.map(remark => {
+        // Match ' - Name (Department)', capture content of outer parens
+        const match = remark.match(/-\s+.*? \((.*)\)\s*$/);
+        const extracted = match && match[1] ? match[1].trim().toLowerCase() : null;
+        console.log(`[Debug Order ${order.id}] Remark: "${remark}", Extracted: "${extracted}"`);
+        return extracted;
+      }).filter(dept => dept !== null)
+    );
+    
+    // Check if at least one department has left a remark
+    return departments.some(dept => 
+      remarkedDepartments.has(dept.trim().toLowerCase())
+    );
+  };
+
   // ===================== Handlers ===================== //
 
   const handleSubmitRemark = async (id) => {
@@ -329,8 +366,23 @@ const AOadminOfficerDashboard = () => {
     window.location.reload()
   }
 
-  // Validate and generate receipt for a travel request
-  const handleValidate = async (id) => {
+  // Modify the handleValidate function to show confirmation modal first
+  const handleValidateClick = (id) => {
+    const order = travelOrders.find(o => o.id === id);
+    if (!order) {
+      showSnackbar('Could not find travel order', 'error');
+      return;
+    }
+    
+    // Set the order data and show confirmation modal
+    setConfirmOrderData(order);
+    setShowConfirmModal(true);
+  };
+  
+  // Add actual validate function that will be called after confirmation
+  const confirmValidate = async () => {
+    if (!confirmOrderData) return;
+    
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -338,23 +390,17 @@ const AOadminOfficerDashboard = () => {
         return;
       }
 
-      const order = travelOrders.find(o => o.id === id);
-      if (!order) {
-        showSnackbar('Could not find travel order', 'error');
-        return;
-      }
-
       // Format the remark with user info if provided
-      let updatedRemarks = order.remarks;
+      let updatedRemarks = confirmOrderData.remarks;
       if (remarkText.trim()) {
         const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
-        updatedRemarks = order.remarks 
-          ? `${order.remarks}\n${newRemarkWithPosition}`
+        updatedRemarks = confirmOrderData.remarks 
+          ? `${confirmOrderData.remarks}\n${newRemarkWithPosition}`
           : newRemarkWithPosition;
       }
 
       const response = await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
+        `http://localhost:3000/travel-requests/${confirmOrderData.id}/validate`,
         { 
           validationStatus: 'VALIDATED',
           remarks: updatedRemarks
@@ -366,18 +412,18 @@ const AOadminOfficerDashboard = () => {
         // Update the local state to reflect the validation
         setTravelOrders(prevOrders =>
           prevOrders.map(order =>
-            order.id === id
+            order.id === confirmOrderData.id
               ? { ...order, validationStatus: 'VALIDATED', remarks: updatedRemarks }
               : order
           )
         );
 
         // Send notification to the user
-        if (order.user && order.user.id) {
+        if (confirmOrderData.user && confirmOrderData.user.id) {
           await axios.post(
-            `http://localhost:3000/travel-requests/${id}/receipt`,
+            `http://localhost:3000/travel-requests/${confirmOrderData.id}/receipt`,
             {
-              message: `Your travel request has been approved by ${currentUser?.first_name} ${currentUser?.last_name}. Security Code: ${order.securityCode}`
+              message: `Your travel request has been approved by ${currentUser?.first_name} ${currentUser?.last_name}. Security Code: ${confirmOrderData.securityCode}`
             },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -385,11 +431,14 @@ const AOadminOfficerDashboard = () => {
 
         setExpandedId(null);
         setRemarkText("");
+        setShowConfirmModal(false);
+        setConfirmOrderData(null);
         showSnackbar('Travel request validated successfully', 'success');
       }
     } catch (error) {
       console.error('Error validating request:', error);
       showSnackbar('Failed to validate the request', 'error');
+      setShowConfirmModal(false);
     }
   };
 
@@ -599,6 +648,70 @@ const AOadminOfficerDashboard = () => {
     }
   };
 
+  // Update the Confirmation Modal Component to match the image
+  const ConfirmModal = ({ show, onClose, onConfirm, data }) => {
+    if (!show || !data) return null;
+    
+    return (
+      <div className="receipt-modal">
+        <div className="receipt-modal-content">
+          <div className="receipt-header">
+            <h2>Travel Request Summary</h2>
+            <button className="close-button" onClick={onClose}>×</button>
+          </div>
+          
+          <div className="receipt-body">
+            <div className="receipt-section">
+              <h3>Travel Details</h3>
+              <div className="receipt-detail">
+                <span className="label">Name:</span>
+                <span className="value">{data.teacherName}</span>
+              </div>
+              <div className="receipt-detail">
+                <span className="label">Position:</span>
+                <span className="value">{data.teacherPosition}</span>
+              </div>
+              <div className="receipt-detail">
+                <span className="label">School/Office:</span>
+                <span className="value">{data.teacherSchool}</span>
+              </div>
+              <div className="receipt-detail">
+                <span className="label">Department(s):</span>
+                <span className="value">{data.department}</span>
+              </div>
+              <div className="receipt-detail">
+                <span className="label">Purpose:</span>
+                <span className="value">{data.purpose}</span>
+              </div>
+              <div className="receipt-detail">
+                <span className="label">Travel Period:</span>
+                <span className="value">{data.startDate} to {data.endDate}</span>
+              </div>
+              <div className="receipt-detail">
+                <span className="label">Status:</span>
+                <span className="value status-badge approved">APPROVED</span>
+              </div>
+            </div>
+            
+            <div className="receipt-section">
+              <h3>Remarks</h3>
+              <div className="receipt-remarks">
+                {data.remarks ? data.remarks.split('\n').map((remark, idx) => (
+                  <p key={idx}>{remark}</p>
+                )) : <p>No remarks</p>}
+              </div>
+            </div>
+          </div>
+          
+          <div className="receipt-footer">
+            <button className="cancel-button" onClick={onClose}>Cancel</button>
+            <button className="confirm-button" onClick={onConfirm}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
@@ -798,8 +911,12 @@ const AOadminOfficerDashboard = () => {
                           className="validate-button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleValidate(order.id);
+                            handleValidateClick(order.id);
                           }}
+                          disabled={!checkAnyDepartmentRemarks(order)}
+                          title={!checkAnyDepartmentRemarks(order) ? 
+                            "At least one department must add a remark before approval" : 
+                            "Approve this travel request"}
                         >
                           APPROVE
                         </button>
@@ -827,6 +944,14 @@ const AOadminOfficerDashboard = () => {
         show={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
         data={receiptData}
+      />
+      
+      {/* Add the new Confirmation Modal */}
+      <ConfirmModal
+        show={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmValidate}
+        data={confirmOrderData}
       />
     </div>
   );

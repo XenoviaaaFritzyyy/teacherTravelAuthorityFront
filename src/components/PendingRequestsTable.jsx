@@ -191,17 +191,10 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
       : oldRemarks;
 
     try {
-      // Update status to accepted
+      // Only update status to accepted
       await axios.patch(
         `http://localhost:3000/travel-requests/${id}/status`,
         { status: "accepted" },
-        getAuthHeaders()
-      );
-
-      // Also update validation status to VALIDATED
-      await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
-        { validationStatus: "VALIDATED" },
         getAuthHeaders()
       );
 
@@ -221,7 +214,6 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
             ? { 
                 ...req, 
                 status: "accepted", 
-                validationStatus: "VALIDATED", 
                 remarks: appendedRemarks 
               }
             : req
