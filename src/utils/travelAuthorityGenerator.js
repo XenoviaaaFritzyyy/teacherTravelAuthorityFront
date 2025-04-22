@@ -82,11 +82,30 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   doc.text('Date of filing:', labelX, y);
   
   // Format date as MONTH DD, YYYY
-  // Always use the current date for the filing date
-  const filingDate = new Date();
+  // Use the filing date from the travel request if available, otherwise use start date
+  let filingDate;
   
-  // Log the current date being used
-  console.log('Using current date for filing date:', filingDate);
+  // Check various possible fields for filing date
+  if (travelRequest.filing_date) {
+    filingDate = new Date(travelRequest.filing_date);
+  } else if (travelRequest.created_at) {
+    filingDate = new Date(travelRequest.created_at);
+  } else if (travelRequest.createdAt) {
+    filingDate = new Date(travelRequest.createdAt);
+  } else if (travelRequest.date_filed) {
+    filingDate = new Date(travelRequest.date_filed);
+  } else if (travelRequest.date_created) {
+    filingDate = new Date(travelRequest.date_created);
+  } else if (travelRequest.startDate) {
+    // If no filing date is available, use the start date as a fallback
+    filingDate = new Date(travelRequest.startDate);
+  } else if (travelRequest.start_date) {
+    filingDate = new Date(travelRequest.start_date);
+  } else {
+    // Last resort: use current date
+    filingDate = new Date();
+    console.log('No filing date found in travel request, using current date:', filingDate);
+  }
   
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate = filingDate.toLocaleDateString('en-US', options).toUpperCase();
@@ -104,7 +123,11 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   // Add authorization text
   y += 15;
   doc.setFontSize(10);
-  doc.text('You are hereby authorized to travel and proceed to', 20, y);
+  
+  // Calculate the proper position for the authorization text
+  const authTextX = 20;
+  const authText = 'You are hereby authorized to travel and proceed to';
+  doc.text(authText, authTextX, y);
   
   // Add department as the place to visit
   // Check all possible locations where department data might be stored
@@ -131,21 +154,41 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   });
   
   // Define the line width and position for the department
-  const departmentLineStartX = 100; // Start the line further to the right
-  const departmentLineWidth = 80; // Fixed width for the line
-  const departmentLineEndX = departmentLineStartX + departmentLineWidth;
+  const departmentLineStartX = authTextX + doc.getTextWidth(authText) + 5; // Start right after the auth text
+  const departmentLineEndX = doc.internal.pageSize.width - 20; // End at the right margin
   
-  // Center the department text above the line
-  doc.text(departmentText, (departmentLineStartX + departmentLineEndX) / 2, y, { align: 'center' });
+  // Split long department text into multiple lines if needed
+  const maxDepartmentWidth = departmentLineEndX - departmentLineStartX - 10; // Leave some margin
+  const departmentLines = doc.splitTextToSize(departmentText, maxDepartmentWidth);
   
-  // Draw line under the department text
+  // Calculate center position for text alignment
+  const departmentCenterX = (departmentLineStartX + departmentLineEndX) / 2;
+  
+  // Keep track of original y position
+  const originalY = y;
+  
+  // Add each line of the department text
+  // If there's more than one line, position it above the line to ensure alignment
+  if (departmentLines.length > 1) {
+    // Calculate the position to start text so the last line is at the original y position
+    const startY = originalY - ((departmentLines.length - 1) * 5);
+    doc.text(departmentLines, departmentCenterX, startY, { align: 'center' });
+  } else {
+    // For single line, use the original position
+    doc.text(departmentLines, departmentCenterX, originalY, { align: 'center' });
+  }
+  
+  // Draw line under the destination text at the fixed position
   doc.setLineWidth(0.1);
-  doc.line(departmentLineStartX, y + 1, departmentLineEndX, y + 1);
+  doc.line(departmentLineStartX, originalY + 1, departmentLineEndX, originalY + 1);
   
   // Add small text under the line
-  y += 5;
+  const departmentY = originalY + 5;
   doc.setFontSize(8);
-  doc.text('(Name of office or place to visit)', (departmentLineStartX + departmentLineEndX) / 2, y, { align: 'center' });
+  doc.text('(Name of office or place to visit)', (departmentLineStartX + departmentLineEndX) / 2, departmentY, { align: 'center' });
+  
+  // Update the main y position to continue after the department section
+  y = departmentY;
   
   // Add date of travel - completely restructured to avoid overlapping
   y += 10;
@@ -200,6 +243,11 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   // Restore original font size
   doc.setFontSize(originalFontSize);
   
+  // Add text for official transactions on the same line as the date
+  // Calculate position after the date line
+  const transactionTextX = travelDateX + travelDateWidth + 5;
+  doc.text(', to do the following official transactions:', transactionTextX, y);
+  
   // Draw line under the travel date
   doc.setLineWidth(0.1);
   doc.line(travelDateX, y + 1, travelDateX + travelDateWidth, y + 1);
@@ -208,11 +256,6 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   y += 5;
   doc.setFontSize(8);
   doc.text('(Date of actual travel)', travelDateX + (travelDateWidth / 2), y, { align: 'center' });
-  
-  // Add text for official transactions on a new line rather than same line to prevent overlap
-  y += 8;
-  doc.setFontSize(10);
-  doc.text(', to do the following official transactions:', 20, y);
   
   // Add bullet points for purpose
   y += 10;

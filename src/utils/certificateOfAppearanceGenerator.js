@@ -124,8 +124,19 @@ export const generateCertificateOfAppearancePDF = (travelRequest) => {
       departmentText = travelRequest.department;
     }
   }
-  doc.text(departmentText, valueX, y);
   
+  // Split department text if it's too long
+  const maxDepartmentWidth = 100; // Adjust this value as needed
+  const departmentLines = doc.splitTextToSize(departmentText, maxDepartmentWidth);
+  doc.text(departmentLines, valueX, y);
+  
+  // Draw the underline at a fixed position regardless of text length
+  doc.line(valueX, y + 1, valueX + maxDepartmentWidth, y + 1);
+  
+  // Adjust y position based on number of lines in department text
+  const departmentLineHeight = 5;
+  y += (departmentLines.length - 1) * departmentLineHeight;
+
   // Travel Period
   y += 10;
   doc.setFont('helvetica', 'bold');
