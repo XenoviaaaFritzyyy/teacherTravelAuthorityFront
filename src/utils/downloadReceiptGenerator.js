@@ -6,158 +6,139 @@ import { jsPDF } from 'jspdf';
  * @returns {jsPDF} - The generated PDF document
  */
 export const generateDownloadReceiptPDF = (travelRequest) => {
-  // Create new PDF document
-  const doc = new jsPDF();
+  // Create new PDF document in portrait format to match the original certificate
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'legal' // Changed to A4 size for standard paper
+  });
   
   // Set initial position
   let y = 20;
   
-  // Add DepEd logo at the top center
+  // Add the header image
   try {
-    const logoImg = new Image();
-    logoImg.src = '/depedlogo.png';
+    const headerImg = new Image();
+    headerImg.src = '/Header.png';
     
-    // Add the logo to the PDF
+    // Add the header to the PDF
     const pageWidth = doc.internal.pageSize.width;
-    const imgWidth = 20;
-    const imgHeight = 20;
+    const imgWidth = 150;
+    const imgHeight = 40;
     const x = (pageWidth - imgWidth) / 2;
-    doc.addImage(logoImg, 'PNG', x, y, imgWidth, imgHeight);
+    doc.addImage(headerImg, 'PNG', x, y, imgWidth, imgHeight);
   } catch (error) {
-    console.error('Error adding logo:', error);
+    console.error('Error adding header:', error);
   }
   
-  // Add header text
-  y += 25;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Republic of the Philippines', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  y += 5;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Department of Education', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  y += 5;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('REGION VII - CENTRAL VISAYAS', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  y += 5;
-  doc.text('Division of Cebu Province', doc.internal.pageSize.width / 2, y, { align: 'center' });
+  // Move y-position past the header
+  y += 45;
   
   // Add title
-  y += 15;
+  y += 10;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('CERTIFICATE OF APPEARANCE', doc.internal.pageSize.width / 2, y, { align: 'center' });
   
-  // Add form fields
-  y += 20;
-  doc.setFontSize(10);
+  // Add certification text
+  y += 15;
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
+  doc.text('This is to certify that the person named hereunder had appeared before this Office, with', doc.internal.pageSize.width / 2, y, { align: 'center' });
+  y += 5;
+  doc.text('details as follows:', doc.internal.pageSize.width / 2, y, { align: 'center' });
+  
+  // Add form fields
+  y += 12;
+  doc.setFontSize(11);
   
   // Name field
-  doc.text('Name:', 30, y);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Name', 35, y);
+  doc.text(':', 68, y);
+  doc.setFont('helvetica', 'normal');
   const fullName = `${travelRequest.user?.first_name || ''} ${travelRequest.user?.last_name || ''}`.trim();
-  doc.text(fullName, 105, y, { align: 'center' });
-  doc.line(60, y + 1, 150, y + 1);
+  doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
+  doc.text(fullName, (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   
   // Date field
-  y += 15;
-  doc.text('Date:', 30, y);
-  
+  y += 20;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Date', 35, y);
+  doc.text(':', 68, y);
+  doc.setFont('helvetica', 'normal');
   // Format date as MM/DD/YYYY
   const currentDate = new Date();
   const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
-  doc.text(formattedDate, 105, y, { align: 'center' });
-  doc.line(60, y + 1, 150, y + 1);
+  doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
+  doc.text(formattedDate, (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   
   // Purpose field
-  y += 15;
-  doc.text('Purpose:', 30, y);
-  doc.text(travelRequest.purpose || '', 105, y, { align: 'center' });
-  doc.line(60, y + 1, 150, y + 1);
-  
-  // Add certification text
-  y += 25;
-  doc.setFontSize(10);
-  doc.text('This is to certify that the person named herewith appeared before this Office, with', 105, y, { align: 'center' });
-  
-  y += 10;
-  doc.text('details as follows:', 105, y, { align: 'center' });
-  
-  // Add details
   y += 20;
-  const labelX = 30;
-  const valueX = 80;
-  
-  // Security Code
   doc.setFont('helvetica', 'bold');
-  doc.text('Security Code:', labelX, y);
+  doc.text('Purpose', 35, y);
+  doc.text(':', 68, y);
   doc.setFont('helvetica', 'normal');
-  doc.text(travelRequest.securityCode || '', valueX, y);
+  doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
+  doc.text(travelRequest.purpose || '', (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   
-  // Position
-  y += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Position:', labelX, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text(travelRequest.teacherPosition || travelRequest.user?.position || '', valueX, y);
+  // Empty line
+  y += 20;
+  doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
   
-  // School/Office
-  y += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.text('School/Office:', labelX, y);
-  doc.setFont('helvetica', 'normal');
-  // Use school_name from travel request as per memory
-  const schoolName = travelRequest.school_name || travelRequest.user?.school_name || '';
-  doc.text(schoolName, valueX, y);
-  
-  // Department
-  y += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Department(s):', labelX, y);
-  doc.setFont('helvetica', 'normal');
-  
-  // Format department text
-  let departmentText = '';
-  if (travelRequest.department) {
-    if (Array.isArray(travelRequest.department)) {
-      departmentText = travelRequest.department.join(', ');
-    } else {
-      departmentText = travelRequest.department;
-    }
-  }
-  doc.text(departmentText, valueX, y);
-  
-  // Travel Period
-  y += 10;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Travel Period:', labelX, y);
-  doc.setFont('helvetica', 'normal');
-  
-  // Format travel dates
-  let travelPeriod = '';
-  if (travelRequest.startDate && travelRequest.endDate) {
-    const startDate = new Date(travelRequest.startDate);
-    const endDate = new Date(travelRequest.endDate);
-    travelPeriod = `${formatDate(startDate)} to ${formatDate(endDate)}`;
-  }
-  doc.text(travelPeriod, valueX, y);
-  
-  // Add signature line
-  y = doc.internal.pageSize.height - 50;
-  doc.line(30, y, 90, y);
-  doc.text('JEROME C. DAMASCO, J.D.', 60, y + 5, { align: 'center' });
-  doc.text('Administrative Officer V', 60, y + 10, { align: 'center' });
-  
+  // Add an empty line before the note at the bottom - positioned for better spacing
+  y += 25;
+  doc.line(35, y, doc.internal.pageSize.width - 35, y);
+
   // Add note at the bottom
-  y = doc.internal.pageSize.height - 20;
-  doc.setFontSize(8);
-  doc.text('This authorization is issued as required at the lodging place and for whatever legal', 105, y, { align: 'center' });
-  y += 5;
-  doc.text('purposes, supplementations or attachments.', 105, y, { align: 'center' });
+  y += 30;
+  doc.setFontSize(11);
+  doc.text('This certification is issued as averment of the foregoing facts and for whatever legal', doc.internal.pageSize.width / 2, y, { align: 'center' });
+  y += 7;
+  doc.text('purpose this may serve.', doc.internal.pageSize.width / 2, y, { align: 'center' });
+  
+  // Leave more space before signature
+  y += 40;
+  
+  // Add signature line - right aligned
+  const signX = doc.internal.pageSize.width - 100;
+  doc.line(signX, y, doc.internal.pageSize.width - 35, y);
+
+  // Add signature text below the line
+  y += 7;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('JEREMY C. DEWAMPO, J.D.', (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
+  y += 7;
+  doc.text('Administrative Officer V', (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
+
+  // Add note about validity - left aligned, below signature
+  y += 10;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Note: Not valid with erasures, superimpositions or alterations.', 45, y);
+  
+  // Add much more space before the footer line to prevent overlap
+  y += 90;
+  doc.line(30, y, doc.internal.pageSize.width - 30, y);
+  
+  // Add footer image at the bottom
+  try {
+    const footerImg = new Image();
+    footerImg.src = '/Footer.png';
+    
+    // Add the footer to the PDF
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const imgWidth = 180;
+    const imgHeight = 25;
+    const x = (pageWidth - imgWidth) / 2;
+    // Position the footer much higher on the page to prevent overflow
+    const footerY = pageHeight - 50; 
+    doc.addImage(footerImg, 'PNG', x, footerY, imgWidth, imgHeight);
+  } catch (error) {
+    console.error('Error adding footer:', error);
+  }
   
   return doc;
 };
