@@ -144,8 +144,48 @@ export const generateCertificateOfAppearancePDF = (travelRequest) => {
   // Add signature line
   y = doc.internal.pageSize.height - 50;
   doc.line(30, y, 90, y);
-  doc.text('JEROME C. DAMASCO, J.D.', 60, y + 5, { align: 'center' });
-  doc.text('Administrative Officer V', 60, y + 10, { align: 'center' });
+
+  // Fetch Administrative Officer name and position
+  let approverName = '';
+  let approverPosition = '';
+  if (travelRequest.remarks) {
+    const remarkLines = travelRequest.remarks.split('\n');
+    for (const remark of remarkLines) {
+      const remarksMatch = remark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
+      if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
+        approverName = remarksMatch[1].trim();
+        approverPosition = remarksMatch[2].trim();
+        break;
+      }
+    }
+    // fallback to first remark if none matched
+    if (!approverName && remarkLines.length > 0) {
+      const firstRemark = remarkLines[0];
+      const remarksMatch = firstRemark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
+      if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
+        approverName = remarksMatch[1].trim();
+        approverPosition = remarksMatch[2].trim();
+      }
+    }
+  }
+  if (!approverName) {
+    if (travelRequest.approver_name) {
+      approverName = travelRequest.approver_name;
+    } else if (travelRequest.approver && travelRequest.approver.name) {
+      approverName = travelRequest.approver.name;
+    } else if (travelRequest.approved_by) {
+      approverName = travelRequest.approved_by;
+    } else if (travelRequest.approver && travelRequest.approver.first_name) {
+      approverName = `${travelRequest.approver.first_name} ${travelRequest.approver.last_name || ''}`;
+    } else {
+      approverName = '';
+    }
+  }
+  if (!approverPosition) {
+    approverPosition = 'Administrative Officer V';
+  }
+  doc.text(approverName || ' ', 60, y + 5, { align: 'center' });
+  doc.text(approverPosition, 60, y + 10, { align: 'center' });
   
   // Add note at the bottom
   y = doc.internal.pageSize.height - 20;

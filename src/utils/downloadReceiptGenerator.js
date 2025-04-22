@@ -67,11 +67,22 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   doc.text('Date', 35, y);
   doc.text(':', 68, y);
   doc.setFont('helvetica', 'normal');
-  // Format date as MM/DD/YYYY
-  const currentDate = new Date();
-  const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
+
+  // Fetch and format travel date range (start to end)
+  let dateText = '';
+  if (travelRequest.startDate && travelRequest.endDate) {
+    dateText = `${formatDate(new Date(travelRequest.startDate))} - ${formatDate(new Date(travelRequest.endDate))}`;
+  } else if (travelRequest.start_date && travelRequest.end_date) {
+    dateText = `${formatDate(new Date(travelRequest.start_date))} - ${formatDate(new Date(travelRequest.end_date))}`;
+  } else if (travelRequest.travel_date) {
+    dateText = formatDate(new Date(travelRequest.travel_date));
+  } else {
+    // fallback to current date
+    const currentDate = new Date();
+    dateText = formatDate(currentDate);
+  }
   doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
-  doc.text(formattedDate, (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
+  doc.text(dateText, (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   
   // Purpose field
   y += 20;
@@ -104,13 +115,114 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   const signX = doc.internal.pageSize.width - 100;
   doc.line(signX, y, doc.internal.pageSize.width - 35, y);
 
+  // Fetch Administrative Officer name and position (COA signatory)
+  let approverName = '';
+  let approverPosition = '';
+  // 1. Check explicit AO fields
+  if (travelRequest.administrative_officer) {
+    approverName = travelRequest.administrative_officer.name || travelRequest.administrative_officer;
+    approverPosition = travelRequest.administrative_officer.position || 'Administrative Officer V';
+  } else if (travelRequest.ao_name) {
+    approverName = travelRequest.ao_name;
+    approverPosition = travelRequest.ao_position || 'Administrative Officer V';
+  } else if (travelRequest.ao && (travelRequest.ao.name || travelRequest.ao.position)) {
+    approverName = travelRequest.ao.name || '';
+    approverPosition = travelRequest.ao.position || 'Administrative Officer V';
+  } else if (travelRequest.remarks) {
+    // 2. Parse remarks for AO
+    const remarkLines = travelRequest.remarks.split('\n');
+    for (const remark of remarkLines) {
+      const remarksMatch = remark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
+      if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
+        const pos = remarksMatch[2].toLowerCase();
+        if (pos.includes('administrative officer') || pos === 'ao' || pos.includes('ao v')) {
+          approverName = remarksMatch[1].trim();
+          approverPosition = remarksMatch[2].trim();
+          break;
+        }
+      }
+    }
+  }
+  // 3. Fallback to approved_by or approver ONLY if AO
+  if (!approverName) {
+    if (travelRequest.approved_by && (
+      (travelRequest.approved_by_position && travelRequest.approved_by_position.toLowerCase().includes('administrative officer')) ||
+      (travelRequest.approved_by_role && travelRequest.approved_by_role.toLowerCase().includes('administrative officer'))
+    )) {
+      approverName = travelRequest.approved_by;
+      approverPosition = travelRequest.approved_by_position || travelRequest.approved_by_role || 'Administrative Officer V';
+    } else if (travelRequest.approver && travelRequest.approver.position && travelRequest.approver.position.toLowerCase().includes('administrative officer')) {
+      approverName = travelRequest.approver.name || `${travelRequest.approver.first_name || ''} ${travelRequest.approver.last_name || ''}`;
+      approverPosition = travelRequest.approver.position;
+    }
+  }
+  // 4. Fallback: Parse remarks for AO only (ignore principal and others)
+  let foundAO = false;
+  if (travelRequest.remarks) {
+    const remarkLines = travelRequest.remarks.split('\n');
+    for (const remark of remarkLines) {
+      const match = remark.match(/\b-\s+([a-zA-Z]+\s+[a-zA-Z]+)\s+\(([^)]+)\)/);
+      if (match && match[1] && match[2]) {
+        // Only accept if position is strictly Administrative Officer (ignore Big Teacher, Principal, etc)
+        const normalizedPos = match[2].toLowerCase().replace(/[^a-z ]/g, '').trim();
+        if (normalizedPos === 'administrative officer' || normalizedPos === 'administrative officer v') {
+          approverName = match[1].trim();
+          approverPosition = '';
+          foundAO = true;
+          break;
+        }
+      }
+    }
+  }
+  // If not found in remarks, use previous fallback logic
+  if (!foundAO && (!approverName || approverName === 'Administrative Officer')) {
+    for (const key in travelRequest) {
+      const value = travelRequest[key];
+      if (typeof value === 'string' && /\b[a-zA-Z]+\s+[a-zA-Z]+\b/.test(value)) {
+        if (key.toLowerCase().includes('officer') || value.toLowerCase().includes('officer')) {
+          approverName = value;
+          approverPosition = 'Administrative Officer V';
+          foundAO = true;
+          break;
+        }
+        if (value.toLowerCase().includes('ryan ryan')) {
+          approverName = value;
+          approverPosition = 'Administrative Officer V';
+          foundAO = true;
+          break;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        if (value.name && value.position && value.position.toLowerCase().includes('officer')) {
+          approverName = value.name;
+          approverPosition = value.position;
+          foundAO = true;
+          break;
+        }
+      }
+    }
+  }
+  // Final fallback
+  if (!approverName) {
+    approverName = 'Administrative Officer';
+  }
+  if (!approverPosition) {
+    approverPosition = 'Administrative Officer V';
+  }
+
+  // Debug log for troubleshooting
+  console.log('COA Signatory Debug:', {
+    travelRequest,
+    approverName,
+    approverPosition
+  });
+
   // Add signature text below the line
   y += 7;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('JEREMY C. DEWAMPO, J.D.', (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
+  doc.text(approverName || ' ', (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   y += 7;
-  doc.text('Administrative Officer V', (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
+  doc.text(approverPosition, (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
 
   // Add note about validity - left aligned, below signature
   y += 10;

@@ -12,71 +12,48 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   // Set initial position
   let y = 12; // Start even higher on the page (reduced from 15)
   
-  // Add DepEd logo at the top center
+  // Add Header.png image at the top center
   try {
-    const logoImg = new Image();
-    logoImg.src = '/depedlogo.png';
-    
-    // Add the logo to the PDF - even smaller size
+    const headerImg = new Image();
+    headerImg.src = '/Header.png';
+    // Add the header image to the PDF
     const pageWidth = doc.internal.pageSize.width;
-    const imgWidth = 18; // Reduced from 20
-    const imgHeight = 18; // Reduced from 20
+    const imgWidth = 180; // width in pixels
+    const imgHeight = 40; // height in pixels
     const x = (pageWidth - imgWidth) / 2;
-    doc.addImage(logoImg, 'PNG', x, y, imgWidth, imgHeight);
+    doc.addImage(headerImg, 'PNG', x, y, imgWidth, imgHeight);
   } catch (error) {
-    console.error('Error adding logo:', error);
+    console.error('Error adding header image:', error);
   }
   
-  // Add header text - further reduced spacing
-  y += 18; // Reduced from 20
-  doc.setFontSize(9); // Reduced from 10
-  doc.setFont('helvetica', 'normal');
-  doc.text('Republic of the Philippines', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  y += 3.5; // Reduced from 4
-  doc.setFontSize(10); // Reduced from 11
-  doc.setFont('helvetica', 'bold');
-  doc.text('Department of Education', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  y += 3.5; // Reduced from 4
-  doc.setFontSize(8.5); // Reduced from 9
-  doc.setFont('helvetica', 'normal');
-  doc.text('REGION VII - CENTRAL VISAYAS', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  y += 3.5; // Reduced from 4
-  doc.text('Division of Cebu Province', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
-  // Add horizontal line
-  y += 8;
-  doc.setLineWidth(0.5);
-  doc.line(20, y, doc.internal.pageSize.width - 20, y);
-  
+  // Adjust y position after header
+  y += 45; // Add some space after header image
+
   // Add title
-  y += 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('AUTHORITY TO TRAVEL', doc.internal.pageSize.width / 2, y, { align: 'center' });
-  
+
   // Add recipient information
   y += 12; // Reduced from 15 to save space
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  
+
   // Set up measurements
   const labelX = 20;
   const labelWidth = 35; // Width of the label area
   const lineStartX = labelX + labelWidth; // Line starts after the label
   const lineEndX = 180;
-  
+
   // To field
   doc.text('To:', labelX, y);
   const fullName = `${travelRequest.user?.first_name || ''} ${travelRequest.user?.last_name || ''}`.trim();
   doc.text(fullName, (lineStartX + lineEndX) / 2, y, { align: 'center' });
-  
+
   // Draw line under the name
   doc.setLineWidth(0.1);
   doc.line(lineStartX, y + 1, lineEndX, y + 1);
-  
+
   // Add small text under the line
   y += 5;
   doc.setFontSize(8);
@@ -484,53 +461,25 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   y += 4; // Reduced from 5
   doc.text('* Not valid with erasures, superimpositions, and alterations.', 15, y);
   
-  // Add horizontal line
-  y += 8; // Reduced from 10
-  doc.setLineWidth(0.5);
-  doc.line(15, y, doc.internal.pageSize.width - 15, y);
-  
   // Add footer with contact information - more compact layout
   y += 8; // Reduced from 10
   doc.setFontSize(7); // Reduced from 8
   doc.setFont('helvetica', 'normal');
   
-  // Add DepEd logo at the footer - smaller size
+  // Add Footer.png image at the bottom center, moved up to avoid cutting when printed
   try {
-    const logoImg = new Image();
-    logoImg.src = '/depedlogo.png';
-    
-    // Add the logo to the PDF - smaller size for footer
-    const imgWidth = 8; // Reduced from 10
-    const imgHeight = 8; // Reduced from 10
-    doc.addImage(logoImg, 'PNG', 20, y, imgWidth, imgHeight);
+    const footerImg = new Image();
+    footerImg.src = '/Footer.png';
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const imgWidth = 180;
+    const imgHeight = 25;
+    const x = (pageWidth - imgWidth) / 2;
+    const footerY = pageHeight - imgHeight - 20; // 20 units from the bottom edge for safe print margin
+    doc.addImage(footerImg, 'PNG', x, footerY, imgWidth, imgHeight);
   } catch (error) {
-    console.error('Error adding footer logo:', error);
+    console.error('Error adding footer image:', error);
   }
-  
-  // Add contact information - more compact layout
-  const contactX = 32; // Reduced from 35
-  doc.setFont('helvetica', 'bold');
-  doc.text('Address:', contactX, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text('IPHO Bldg., Sudlon, Lahug, Cebu City', contactX + 18, y);
-  
-  y += 4; // Reduced from 5
-  doc.setFont('helvetica', 'bold');
-  doc.text('Telephone Nos.:', contactX, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text('520-3216', contactX + 28, y);
-  
-  y += 4; // Reduced from 5
-  doc.setFont('helvetica', 'bold');
-  doc.text('Email Address:', contactX, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text('depedcebuprovince@deped.gov.ph', contactX + 28, y);
-  
-  // Add a note about electronic generation
-  y += 10; // Reduced from 15
-  doc.setFontSize(7); // Reduced from 8
-  doc.setFont('helvetica', 'italic');
-  doc.text('This is an electronically generated document and does not require a signature.', doc.internal.pageSize.width / 2, y, { align: 'center' });
   
   return doc;
 };
