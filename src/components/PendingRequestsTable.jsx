@@ -6,6 +6,7 @@ import "./PendingRequestsTable.css";
 
 const PendingRequestsTable = ({ onUnviewedCountChange }) => {
   const { user } = useUser();
+  const { showSnackbar } = useSnackbar(); // Add this destructuring to get showSnackbar
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -190,10 +191,17 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
       : oldRemarks;
 
     try {
-      // Update status to accepted instead of validation status
+      // Update status to accepted
       await axios.patch(
         `http://localhost:3000/travel-requests/${id}/status`,
         { status: "accepted" },
+        getAuthHeaders()
+      );
+
+      // Also update validation status to VALIDATED
+      await axios.patch(
+        `http://localhost:3000/travel-requests/${id}/validate`,
+        { validationStatus: "VALIDATED" },
         getAuthHeaders()
       );
 
@@ -208,8 +216,18 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
 
       // Update local state
       setPendingRequests((prevRequests) =>
-        prevRequests.filter((req) => req.id !== id)
+        prevRequests.map((req) =>
+          req.id === id
+            ? { 
+                ...req, 
+                status: "accepted", 
+                validationStatus: "VALIDATED", 
+                remarks: appendedRemarks 
+              }
+            : req
+        )
       );
+      
       setExpandedId(null);
       setRemarkText("");
       showSnackbar("Travel request approved successfully!", 'success');
@@ -302,9 +320,9 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
   const getStatusBadgeClass = (status, validationStatus, isCodeExpired) => {
     if (isCodeExpired) return "status-badge expired";
     
-    if (status === "ACCEPTED" || validationStatus === "VALIDATED") {
+    if (status === "accepted" || validationStatus === "VALIDATED") {
       return "status-badge accepted";
-    } else if (status === "REJECTED" || validationStatus === "REJECTED") {
+    } else if (status === "rejected" || validationStatus === "REJECTED") {
       return "status-badge rejected";
     } else {
       return "status-badge pending";
@@ -315,9 +333,9 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
   const getStatusDisplayText = (status, validationStatus, isCodeExpired) => {
     if (isCodeExpired) return "EXPIRED";
     
-    if (validationStatus === "VALIDATED") return "VALIDATED";
+    if (status === "accepted" || validationStatus === "VALIDATED") return "APPROVED";
     if (validationStatus === "REJECTED") return "REJECTED";
-    return status.toUpperCase();
+    return "PENDING";
   };
 
   // Handle status filter change
@@ -325,10 +343,31 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
     setStatusFilter(e.target.value);
   };
 
-  // Filter requests based on status
+  // Filter requests based ONLY on status
   const filteredRequests = pendingRequests.filter(request => {
-    if (statusFilter === "all") return true;
-    return request.validationStatus === statusFilter;
+    if (statusFilter === "all") {
+      return true;
+    }
+
+    // Normalize status from the request data (assuming it might be null/undefined or different cases)
+    const currentStatus = (request.status || '').toLowerCase();
+
+    // Compare with the selected filter value
+    if (statusFilter === "PENDING") {
+      return currentStatus === 'pending'; // Match 'pending' status
+    }
+    if (statusFilter === "VALIDATED") {
+      // 'Validated' filter option should match 'accepted' status
+      return currentStatus === 'accepted'; 
+    }
+    if (statusFilter === "REJECTED") {
+      // 'Rejected' filter option should match 'rejected' status
+      // Note: Check if your backend actually sets status to 'rejected'. 
+      // If rejection only updates validationStatus, this filter might not show rejected items.
+      return currentStatus === 'rejected'; 
+    }
+    
+    return false; // Should not happen if statusFilter matches dropdown options
   });
 
   if (!user) {
@@ -366,7 +405,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
         >
           <option value="all">All Requests</option>
           <option value="PENDING">Pending</option>
-          <option value="VALIDATED">Validated</option>
+          <option value="VALIDATED">Approved</option>
           <option value="REJECTED">Rejected</option>
         </select>
       </div>
@@ -474,8 +513,8 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
                               >
                                 Submit Remark
                               </button>
-                              {/* Only show Approve/Reject buttons if the request is still pending */}
-                              {request.validationStatus === "PENDING" && (
+                              {/* Only show Approve/Reject buttons if the request is still pending for validation */}
+                              {(request.validationStatus === "PENDING" && request.status !== "accepted") && (
                                 <>
                                   <button
                                     className="validate-button"
@@ -498,8 +537,8 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
                                   </button>
                                 </>
                               )}
-                              {/* Show status message if already validated or rejected */}
-                              {request.validationStatus === "VALIDATED" && (
+                              {/* Show status message if already validated, accepted or rejected */}
+                              {(request.validationStatus === "VALIDATED" || request.status === "accepted") && (
                                 <span className="status-message validated">Request has been approved</span>
                               )}
                               {request.validationStatus === "REJECTED" && (

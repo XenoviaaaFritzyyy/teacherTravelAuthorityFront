@@ -436,7 +436,7 @@ const AdminDashboard = () => {
           {
             userId: order.user.id,
             message: `Your travel request has been validated by ${currentUser?.first_name} ${currentUser?.last_name}.`,
-            type: 'TRAVEL_REQUEST_VALIDATED'
+            type: 'CERTIFICATE_OF_APPEARANCE_APPROVED'
           },
           getAuthHeaders()
         );
@@ -625,28 +625,6 @@ const AdminDashboard = () => {
                             Submit Remark
                           </button>
                         </div>
-                        {order.validationStatus === "PENDING" && (
-                          <div className="action-buttons">
-                            <button
-                              className="validate-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleValidate(order.id);
-                              }}
-                            >
-                              APPROVE
-                            </button>
-                            <button
-                              className="reject-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(order.id);
-                              }}
-                            >
-                              REJECT
-                            </button>
-                          </div>
-                        )}
                       </>
                     ) : (
                       <div className="no-permission-notice">
