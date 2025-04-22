@@ -423,7 +423,8 @@ const AOadminOfficerDashboard = () => {
           await axios.post(
             `http://localhost:3000/travel-requests/${confirmOrderData.id}/receipt`,
             {
-              message: `Your travel request has been approved by ${currentUser?.first_name} ${currentUser?.last_name}. Security Code: ${confirmOrderData.securityCode}`
+              message: `Your Certificate of Appearance has been approved by ${currentUser?.first_name} ${currentUser?.last_name}. Security Code: ${confirmOrderData.securityCode}`,
+              type: 'CERTIFICATE_OF_APPEARANCE_APPROVED'  // Add this type parameter
             },
             { headers: { Authorization: `Bearer ${token}` } }
           );
