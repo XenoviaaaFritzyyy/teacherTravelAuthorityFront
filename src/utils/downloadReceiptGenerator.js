@@ -118,87 +118,60 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   // Fetch Administrative Officer name and position (COA signatory)
   let approverName = '';
   let approverPosition = '';
-  // 1. Check explicit AO fields
+  // 1. Strictly check explicit AO fields
   if (travelRequest.administrative_officer) {
     approverName = travelRequest.administrative_officer.name || travelRequest.administrative_officer;
-    approverPosition = travelRequest.administrative_officer.position || 'Administrative Officer V';
+    approverPosition = travelRequest.administrative_officer.position || 'Administrative Officer';
   } else if (travelRequest.ao_name) {
     approverName = travelRequest.ao_name;
-    approverPosition = travelRequest.ao_position || 'Administrative Officer V';
+    approverPosition = travelRequest.ao_position || 'Administrative Officer';
   } else if (travelRequest.ao && (travelRequest.ao.name || travelRequest.ao.position)) {
     approverName = travelRequest.ao.name || '';
-    approverPosition = travelRequest.ao.position || 'Administrative Officer V';
+    approverPosition = travelRequest.ao.position || 'Administrative Officer';
   } else if (travelRequest.remarks) {
-    // 2. Parse remarks for AO
-    const remarkLines = travelRequest.remarks.split('\n');
-    for (const remark of remarkLines) {
-      const remarksMatch = remark.match(/.*\s+-\s+([^(]+)\s+\((.*)\)/);
-      if (remarksMatch && remarksMatch[1] && remarksMatch[2]) {
-        const pos = remarksMatch[2].toLowerCase();
-        if (pos.includes('administrative officer') || pos === 'ao' || pos.includes('ao v')) {
-          approverName = remarksMatch[1].trim();
-          approverPosition = remarksMatch[2].trim();
+    // 2. Parse remarks for AO only (reference AOadminDashboard.jsx logic)
+    const remarkLines = travelRequest.remarks.split('\n').map(l => l.trim()).filter(Boolean);
+    // Scan from last to first for the most recent AO
+    let foundExplicitAO = false;
+    for (let i = remarkLines.length - 1; i >= 0; i--) {
+      const remark = remarkLines[i];
+      const match = remark.match(/-\s+([a-zA-Z]+\s+[a-zA-Z]+)\s*\(([^)]*)\)$/);
+      if (match && match[1] && match[2]) {
+        const foundName = match[1].trim();
+        const foundPosition = match[2].trim();
+        if (foundPosition.toLowerCase().includes('administrative officer')) {
+          approverName = foundName;
+          approverPosition = foundPosition;
+          foundExplicitAO = true;
           break;
+        }
+      }
+    }
+    // If still not found, fallback to previous logic (any non-principal/teacher)
+    if (!foundExplicitAO) {
+      for (let i = remarkLines.length - 1; i >= 0; i--) {
+        const remark = remarkLines[i];
+        const match = remark.match(/-\s+([a-zA-Z]+\s+[a-zA-Z]+)\s*\(([^)]*)\)$/);
+        if (match && match[1] && match[2]) {
+          const foundName = match[1].trim();
+          const foundPosition = match[2].toLowerCase();
+          if (!foundPosition.includes('principal') && !foundPosition.includes('teacher')) {
+            approverName = foundName;
+            approverPosition = 'Administrative Officer';
+            break;
+          }
         }
       }
     }
   }
   // 3. Fallback to approved_by or approver ONLY if AO
   if (!approverName) {
-    if (travelRequest.approved_by && (
-      (travelRequest.approved_by_position && travelRequest.approved_by_position.toLowerCase().includes('administrative officer')) ||
-      (travelRequest.approved_by_role && travelRequest.approved_by_role.toLowerCase().includes('administrative officer'))
-    )) {
+    if (travelRequest.approved_by && travelRequest.approved_by_position && travelRequest.approved_by_position.toLowerCase().includes('administrative officer')) {
       approverName = travelRequest.approved_by;
-      approverPosition = travelRequest.approved_by_position || travelRequest.approved_by_role || 'Administrative Officer V';
+      approverPosition = travelRequest.approved_by_position;
     } else if (travelRequest.approver && travelRequest.approver.position && travelRequest.approver.position.toLowerCase().includes('administrative officer')) {
       approverName = travelRequest.approver.name || `${travelRequest.approver.first_name || ''} ${travelRequest.approver.last_name || ''}`;
       approverPosition = travelRequest.approver.position;
-    }
-  }
-  // 4. Fallback: Parse remarks for AO only (ignore principal and others)
-  let foundAO = false;
-  if (travelRequest.remarks) {
-    const remarkLines = travelRequest.remarks.split('\n');
-    for (const remark of remarkLines) {
-      const match = remark.match(/\b-\s+([a-zA-Z]+\s+[a-zA-Z]+)\s+\(([^)]+)\)/);
-      if (match && match[1] && match[2]) {
-        // Only accept if position is strictly Administrative Officer (ignore Big Teacher, Principal, etc)
-        const normalizedPos = match[2].toLowerCase().replace(/[^a-z ]/g, '').trim();
-        if (normalizedPos === 'administrative officer' || normalizedPos === 'administrative officer v') {
-          approverName = match[1].trim();
-          approverPosition = '';
-          foundAO = true;
-          break;
-        }
-      }
-    }
-  }
-  // If not found in remarks, use previous fallback logic
-  if (!foundAO && (!approverName || approverName === 'Administrative Officer')) {
-    for (const key in travelRequest) {
-      const value = travelRequest[key];
-      if (typeof value === 'string' && /\b[a-zA-Z]+\s+[a-zA-Z]+\b/.test(value)) {
-        if (key.toLowerCase().includes('officer') || value.toLowerCase().includes('officer')) {
-          approverName = value;
-          approverPosition = 'Administrative Officer V';
-          foundAO = true;
-          break;
-        }
-        if (value.toLowerCase().includes('ryan ryan')) {
-          approverName = value;
-          approverPosition = 'Administrative Officer V';
-          foundAO = true;
-          break;
-        }
-      } else if (typeof value === 'object' && value !== null) {
-        if (value.name && value.position && value.position.toLowerCase().includes('officer')) {
-          approverName = value.name;
-          approverPosition = value.position;
-          foundAO = true;
-          break;
-        }
-      }
     }
   }
   // Final fallback
@@ -206,7 +179,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
     approverName = 'Administrative Officer';
   }
   if (!approverPosition) {
-    approverPosition = 'Administrative Officer V';
+    approverPosition = 'Administrative Officer';
   }
 
   // Debug log for troubleshooting
