@@ -392,18 +392,25 @@ const AOadminOfficerDashboard = () => {
 
       // Format the remark with user info if provided
       let updatedRemarks = confirmOrderData.remarks;
-      if (remarkText.trim()) {
-        const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
-        updatedRemarks = confirmOrderData.remarks 
-          ? `${confirmOrderData.remarks}\n${newRemarkWithPosition}`
-          : newRemarkWithPosition;
-      }
+      
+      // ALWAYS add a remark with the AO's info, using default text if the textarea is empty
+      const aoRemark = remarkText.trim() 
+        ? `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Administrative Officer'})`
+        : `Approved - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Administrative Officer'})`;
+      
+      updatedRemarks = confirmOrderData.remarks 
+        ? `${confirmOrderData.remarks}\n${aoRemark}`
+        : aoRemark;
 
       const response = await axios.patch(
         `http://localhost:3000/travel-requests/${confirmOrderData.id}/validate`,
         { 
           validationStatus: 'VALIDATED',
-          remarks: updatedRemarks
+          remarks: updatedRemarks,
+          administrative_officer: {
+            name: `${currentUser?.first_name} ${currentUser?.last_name}`,
+            position: currentUser?.position || 'Administrative Officer'
+          }
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -423,8 +430,8 @@ const AOadminOfficerDashboard = () => {
           await axios.post(
             `http://localhost:3000/travel-requests/${confirmOrderData.id}/receipt`,
             {
-              message: `Your Certificate of Appearance has been approved by ${currentUser?.first_name} ${currentUser?.last_name}. Security Code: ${confirmOrderData.securityCode}`,
-              type: 'CERTIFICATE_OF_APPEARANCE_APPROVED'  // Add this type parameter
+              message: `Your Certificate of Appearance has been approved by ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Administrative Officer'}). Security Code: ${confirmOrderData.securityCode}`,
+              type: 'CERTIFICATE_OF_APPEARANCE_APPROVED'
             },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -449,14 +456,12 @@ const AOadminOfficerDashboard = () => {
     if (!order) return;
 
     try {
-      // Format the remark with user info if provided
-      let updatedRemarks = order.remarks;
-      if (remarkText.trim()) {
-        const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
-        updatedRemarks = order.remarks 
-          ? `${order.remarks}\n${newRemarkWithPosition}`
-          : newRemarkWithPosition;
-      }
+      // Format the remark with user info, using default text if the textarea is empty
+      const rejectText = remarkText.trim() || "Rejected";
+      const newRemarkWithPosition = `${rejectText} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
+      const updatedRemarks = order.remarks 
+        ? `${order.remarks}\n${newRemarkWithPosition}`
+        : newRemarkWithPosition;
 
       // Reject the request
       await axios.patch(
@@ -908,28 +913,38 @@ const AOadminOfficerDashboard = () => {
                     
                     {order.validationStatus === "PENDING" && (
                       <div className="action-buttons">
-                        <button
-                          className="validate-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleValidateClick(order.id);
-                          }}
-                          disabled={!checkAnyDepartmentRemarks(order)}
-                          title={!checkAnyDepartmentRemarks(order) ? 
-                            "At least one department must add a remark before approval" : 
-                            "Approve this travel request"}
-                        >
-                          APPROVE
-                        </button>
-                        <button
-                          className="reject-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReject(order.id);
-                          }}
-                        >
-                          Reject
-                        </button>
+                        {!order.remarks.includes(`${currentUser?.first_name} ${currentUser?.last_name}`) ? (
+                          <div className="remark-notification">
+                            Please submit a remark before approval options will appear
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              className="validate-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleValidateClick(order.id);
+                              }}
+                              disabled={!checkAnyDepartmentRemarks(order)}
+                              title={
+                                !checkAnyDepartmentRemarks(order) 
+                                  ? "At least one department must add a remark before approval" 
+                                  : "Approve this travel request"
+                              }
+                            >
+                              APPROVE
+                            </button>
+                            <button
+                              className="reject-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(order.id);
+                              }}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -665,3 +665,14 @@
 .confirm-button:hover {
   background-color: #43a047;
 }
+
+.remark-notification {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 4px solid #ffeeba;
+  margin: 10px 0;
+  font-size: 14px;
+  text-align: center;
+}

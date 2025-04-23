@@ -129,35 +129,63 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
     approverName = travelRequest.ao.name || '';
     approverPosition = travelRequest.ao.position || 'Administrative Officer';
   } else if (travelRequest.remarks) {
-    // 2. Parse remarks for AO only (reference AOadminDashboard.jsx logic)
+    // 2. Parse remarks for all roles (not just AO)
     const remarkLines = travelRequest.remarks.split('\n').map(l => l.trim()).filter(Boolean);
-    // Scan from last to first for the most recent AO
-    let foundExplicitAO = false;
+    console.log("All remarks:", remarkLines);
+    let foundApprover = false;
+    
+    // First, try to find the most recent remark with a position
     for (let i = remarkLines.length - 1; i >= 0; i--) {
       const remark = remarkLines[i];
-      const match = remark.match(/-\s+([a-zA-Z ]+)\s*\(([^)]*)\)$/);
+      const match = remark.match(/-\s+([a-zA-Z0-9\s\.]+)\s*\(([^)]*)\)$/);
       if (match && match[1] && match[2]) {
         const foundName = match[1].trim();
         const foundPosition = match[2].trim();
-        if (foundPosition.toLowerCase().includes('administrative officer')) {
-          approverName = foundName;
-          approverPosition = foundPosition;
-          foundExplicitAO = true;
-          break;
-        }
+        
+        // Accept any valid position, not just Administrative Officer
+        approverName = foundName;
+        approverPosition = foundPosition;
+        foundApprover = true;
+        break;
       }
     }
-    // If still not found, fallback to previous logic (any non-principal/teacher)
-    if (!foundExplicitAO) {
+    
+    // If no match found with proper format, try a more lenient match as fallback
+    if (!foundApprover && remarkLines.length > 0) {
       for (let i = remarkLines.length - 1; i >= 0; i--) {
         const remark = remarkLines[i];
-        const match = remark.match(/-\s+([a-zA-Z ]+)\s*\(([^)]*)\)$/);
-        if (match && match[1] && match[2]) {
-          const foundName = match[1].trim();
-          const foundPosition = match[2].toLowerCase();
-          if (!foundPosition.includes('principal') && !foundPosition.includes('teacher')) {
-            approverName = foundName;
-            approverPosition = 'Administrative Officer';
+        // Try to find any name-like pattern
+        if (remark.includes('-')) {
+          const parts = remark.split('-');
+          if (parts.length >= 2) {
+            const nameSection = parts[parts.length-1].trim();
+            
+            // Check if there's a position in parentheses
+            const posMatch = nameSection.match(/([^(]+)\s*\(([^)]+)\)/);
+            if (posMatch) {
+              approverName = posMatch[1].trim();
+              approverPosition = posMatch[2].trim();
+            } else {
+              // Just use the name part
+              approverName = nameSection;
+              
+              // Try to determine position from request context
+              if (travelRequest.user && travelRequest.user.role) {
+                const userRole = travelRequest.user.role.toUpperCase();
+                if (userRole.includes('TEACHER')) {
+                  approverPosition = 'School Principal';
+                } else if (userRole.includes('PRINCIPAL')) {
+                  approverPosition = 'Public Schools District Supervisor';
+                } else if (userRole.includes('PSDS')) {
+                  approverPosition = 'Assistant Schools Division Superintendent';
+                } else if (userRole.includes('ASDS')) {
+                  approverPosition = 'Schools Division Superintendent';
+                } else if (userRole.includes('SDS')) {
+                  approverPosition = 'Regional Director';
+                }
+              }
+            }
+            foundApprover = true;
             break;
           }
         }
