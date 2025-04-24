@@ -676,3 +676,75 @@
   font-size: 14px;
   text-align: center;
 }
+
+/* View Toggle Styles */
+.view-toggle-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.view-toggle-button {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.view-toggle-button.active {
+  background-color: #00b4d8;
+  color: white;
+  border-color: #0077b6;
+}
+
+.view-toggle-button:hover:not(.active) {
+  background-color: #e0e0e0;
+}
+
+/* Add styles for the no-orders message */
+.no-orders {
+  padding: 2rem;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 1rem 0;
+  color: #6c757d;
+  font-size: 1.1rem;
+  border: 1px dashed #dee2e6;
+}
+
+.no-orders p {
+  margin: 0;
+}
+
+/* Styles for missing departments section */
+.missing-departments {
+  margin-top: 15px;
+  background-color: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.missing-departments p {
+  margin: 0 0 8px 0;
+  font-weight: 500;
+  color: #e65100;
+}
+
+.missing-departments ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.missing-departments li {
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 14px;
+}

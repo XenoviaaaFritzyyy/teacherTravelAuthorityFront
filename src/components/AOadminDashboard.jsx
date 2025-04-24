@@ -9,8 +9,7 @@ import "./AOadminDashboard.css";
 
 const departments = [
   "Accounting",
-  "Administrative",
-  "Administrator",
+  "Administrative Office",
   "Assessment and Evaluation",
   "Assistant Schools Division Superintendent (Cluster A)",
   "Assistant Schools Division Superintendent (Cluster B)",
@@ -210,15 +209,8 @@ const AdminDashboard = () => {
 
   // Add this helper function to check if user has permission for the order
   const hasPermissionForOrder = (order) => {
-    if (!currentUser || !currentUser.position || !order.department) {
-      return false;
-    }
-
-    // Get array of departments from the order
-    const orderDepartments = order.department.split(',').map(dep => dep.trim().toLowerCase());
-    
-    // Check if user's position matches any of the order's departments
-    return orderDepartments.includes(currentUser.position.toLowerCase());
+    // Allow any user with a position to add remarks, regardless of matching department
+    return !!(currentUser && currentUser.position);
   };
 
   // Helper function to get status badge class

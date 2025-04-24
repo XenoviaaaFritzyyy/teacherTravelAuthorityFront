@@ -12,8 +12,7 @@ import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppear
 
 const departments = [
   "Accounting",
-  "Administrative",
-  "Administrator",
+  "Administrative Office",
   "Assessment and Evaluation",
   "Assistant Schools Division Superintendent (Cluster A)",
   "Assistant Schools Division Superintendent (Cluster B)",
@@ -58,9 +57,11 @@ const AOadminOfficerDashboard = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("VALIDATED");
   const [departmentFilter, setDepartmentFilter] = useState("All Departments");
+  const [deptStatusFilter, setDeptStatusFilter] = useState("all"); // Separate status filter for department view
   const [showExpiredFilter, setShowExpiredFilter] = useState(false); 
   const [remarkText, setRemarkText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [deptSearchTerm, setDeptSearchTerm] = useState(""); // Separate search for department view
   const [isCheckingExpiredCodes, setIsCheckingExpiredCodes] = useState(false);
   const [activeView, setActiveView] = useState("orders");
   const [receiptData, setReceiptData] = useState(null);
@@ -77,6 +78,17 @@ const AOadminOfficerDashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   const [validationSummary, setValidationSummary] = useState({
+    total: 0,
+    pending: 0,
+    validated: 0,
+    rejected: 0,
+    expired: 0
+  });
+
+  const [viewMode, setViewMode] = useState("officer"); // "officer" or "department"
+
+  // Add a summary for department requests
+  const [deptRequestSummary, setDeptRequestSummary] = useState({
     total: 0,
     pending: 0,
     validated: 0,
@@ -150,7 +162,17 @@ const AOadminOfficerDashboard = () => {
         expired: 0
       };
 
+      // For department summary, only count Administrative Office requests
+      const deptSummary = {
+        total: 0,
+        pending: 0,
+        validated: 0,
+        rejected: 0,
+        expired: 0
+      };
+
       travelOrders.forEach(order => {
+        // Add to main summary
         if (order.isCodeExpired) {
           summary.expired++;
         } else if (order.validationStatus === 'VALIDATED') {
@@ -160,9 +182,29 @@ const AOadminOfficerDashboard = () => {
         } else {
           summary.pending++;
         }
+
+        // Check if it's an Administrative Office request
+        const isAdminOfficeRequest = order.department && 
+          (order.department.toLowerCase().includes("administrative office") || 
+           order.department.toLowerCase().includes("admin office"));
+
+        // If it's Administrative Office request, add to department summary
+        if (isAdminOfficeRequest) {
+          deptSummary.total++;
+          if (order.isCodeExpired) {
+            deptSummary.expired++;
+          } else if (order.validationStatus === 'VALIDATED') {
+            deptSummary.validated++;
+          } else if (order.validationStatus === 'REJECTED') {
+            deptSummary.rejected++;
+          } else {
+            deptSummary.pending++;
+          }
+        }
       });
 
       setValidationSummary(summary);
+      setDeptRequestSummary(deptSummary);
     };
 
     calculateSummary();
@@ -212,31 +254,104 @@ const AOadminOfficerDashboard = () => {
     }
   };
 
-  // Helper function to check if all departments have added remarks
-  const checkAllDepartmentRemarks = (order) => {
-    if (!order.department || !order.remarks) return false;
+  // Add this helper function to detect all Administrative Officer variations
+  const isAdministrativeOfficerPosition = (positionText) => {
+    if (!positionText) return false;
     
-    // Get array of departments
-    const departments = Array.isArray(order.department) 
-      ? order.department 
+    const position = positionText.toLowerCase();
+    
+    // Match any of these patterns:
+    return (
+      position.includes('administrative officer') || 
+      position.includes('admin officer') ||
+      position.includes('admin. officer') ||
+      // Match patterns like "administrative officer ii" or "administrative officer the 2nd"
+      position.match(/admin(\.|istrative)?\s+officer\s+(the\s+)?\d+(st|nd|rd|th)?/i) ||
+      position.match(/admin(\.|istrative)?\s+officer\s+[iv]+/i) // Match Roman numerals
+    );
+  };
+
+  // Update the checkAllDepartmentRemarks function
+  const checkAllDepartmentRemarks = (order) => {
+    if (!order || !order.department) return true;
+    
+    // Parse departments from the order
+    const departments = Array.isArray(order.department)
+      ? order.department
       : order.department.split(',').map(d => d.trim());
     
-    // Get array of remarks (each remark should end with the department name in parentheses)
-    const remarks = order.remarks.split('\n')
-      .map(remark => remark.trim())
-      .filter(remark => remark.length > 0);
+    // Get all remarks to check
+    const remarkLines = order.remarks ? order.remarks.split('\n').filter(line => line.trim()) : [];
     
-    // Check if each department has a corresponding remark
-    return departments.every(dept => 
-      remarks.some(remark => {
-        // Look for remarks that end with the department name in parentheses
-        const match = remark.match(/.*\((.*?)\)$/);
-        return match && match[1].trim() === dept.trim();
-      })
+    // Track which departments have provided remarks
+    const departmentsWithRemarks = new Set();
+    
+    // Check each remark line for department mentions
+    remarkLines.forEach(line => {
+      // Extract the position from the remark line using regex
+      const positionMatch = line.match(/-\s+.*?\s+\((.*?)\)/);
+      const position = positionMatch ? positionMatch[1] : '';
+      
+      // Check if the position is any variation of Administrative Officer
+      if (isAdministrativeOfficerPosition(position)) {
+        departmentsWithRemarks.add('Administrative Office');
+      }
+      
+      // Check for exact department matches
+      departments.forEach(dept => {
+        if (line.toLowerCase().includes(dept.toLowerCase())) {
+          departmentsWithRemarks.add(dept);
+        }
+      });
+    });
+    
+    // Check if all departments have remarks
+    const missingDepartments = departments.filter(
+      dept => !departmentsWithRemarks.has(dept)
     );
-  }
+    
+    return missingDepartments.length === 0;
+  };
 
-  // Update this helper function to check if at least one department has added remarks
+  // Also update the getMissingDepartments function
+  const getMissingDepartments = (order) => {
+    if (!order || !order.department) return [];
+    
+    // Parse departments from the order
+    const departments = Array.isArray(order.department)
+      ? order.department
+      : order.department.split(',').map(d => d.trim());
+    
+    // Get all remarks to check
+    const remarkLines = order.remarks ? order.remarks.split('\n').filter(line => line.trim()) : [];
+    
+    // Track which departments have provided remarks
+    const departmentsWithRemarks = new Set();
+    
+    // Check each remark line for department mentions
+    remarkLines.forEach(line => {
+      // Extract the position from the remark line using regex
+      const positionMatch = line.match(/-\s+.*?\s+\((.*?)\)/);
+      const position = positionMatch ? positionMatch[1] : '';
+      
+      // Check if the position is any variation of Administrative Officer
+      if (isAdministrativeOfficerPosition(position)) {
+        departmentsWithRemarks.add('Administrative Office');
+      }
+      
+      // Check for exact department matches
+      departments.forEach(dept => {
+        if (line.toLowerCase().includes(dept.toLowerCase())) {
+          departmentsWithRemarks.add(dept);
+        }
+      });
+    });
+    
+    // Return missing departments
+    return departments.filter(dept => !departmentsWithRemarks.has(dept));
+  };
+
+  // Update the checkAnyDepartmentRemarks function to use the new helper
   const checkAnyDepartmentRemarks = (order) => {
     if (!order.department || !order.remarks) return false;
     
@@ -247,24 +362,37 @@ const AOadminOfficerDashboard = () => {
     
     if (departments.length === 0) return false;
     
-    // Get array of remarks (each remark should include the department name in parentheses)
+    // Get array of remarks
     const remarksList = order.remarks.split('\n')
       .map(remark => remark.trim())
       .filter(remark => remark.length > 0);
     
-    // Extract the department name from each remark line using regex
-    const remarkedDepartments = new Set(
-      remarksList.map(remark => {
-        // Match ' - Name (Department)', capture content of outer parens
-        const match = remark.match(/-\s+.*? \((.*)\)\s*$/);
-        const extracted = match && match[1] ? match[1].trim().toLowerCase() : null;
-        console.log(`[Debug Order ${order.id}] Remark: "${remark}", Extracted: "${extracted}"`);
-        return extracted;
-      }).filter(dept => dept !== null)
-    );
+    // Extract positions from each remark line
+    const remarkedDepartments = new Set();
     
-    // Check if at least one department has left a remark
-    return departments.some(dept => 
+    remarksList.forEach(remark => {
+      const positionMatch = remark.match(/-\s+.*?\s+\((.*?)\)/);
+      const position = positionMatch ? positionMatch[1].trim() : '';
+      
+      // Add the position to remarkedDepartments
+      if (position) {
+        if (isAdministrativeOfficerPosition(position)) {
+          remarkedDepartments.add('administrative office');
+        } else {
+          remarkedDepartments.add(position.toLowerCase());
+        }
+      }
+      
+      // Also check for direct department mentions in the remark
+      departments.forEach(dept => {
+        if (remark.toLowerCase().includes(dept.toLowerCase())) {
+          remarkedDepartments.add(dept.toLowerCase());
+        }
+      });
+    });
+    
+    // Check if EVERY department has left a remark
+    return departments.every(dept => 
       remarkedDepartments.has(dept.trim().toLowerCase())
     );
   };
@@ -287,14 +415,35 @@ const AOadminOfficerDashboard = () => {
     const newRemarkWithPosition = `${remarkText.trim()} - ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Unknown Position'})`;
     
     // Handle multiple remarks
-    const updatedRemarks = order.remarks 
-      ? `${order.remarks}\n${newRemarkWithPosition}`
-      : newRemarkWithPosition;
+    const existingRemarks = order.remarks ? order.remarks.trim() : "";
+    
+    // Check if adding this remark would make it too long
+    const MAX_REMARKS_LENGTH = 1000; // Adjust this based on your database column size
+    
+    // Truncate the remarks if necessary
+    let updatedRemarks;
+    if (existingRemarks) {
+      // If existing remarks + new remark is too long
+      if (existingRemarks.length + newRemarkWithPosition.length + 1 > MAX_REMARKS_LENGTH) {
+        // Option 1: Keep only the new remark
+        updatedRemarks = newRemarkWithPosition.substring(0, MAX_REMARKS_LENGTH);
+        showSnackbar("Previous remarks were too long and have been replaced.", 'warning');
+      } else {
+        // Concatenate with newline if within limits
+        updatedRemarks = `${existingRemarks}\n${newRemarkWithPosition}`;
+      }
+    } else {
+      // Just use the new remark, truncated if needed
+      updatedRemarks = newRemarkWithPosition.substring(0, MAX_REMARKS_LENGTH);
+    }
 
     try {
+      // Create a simpler payload (removing the department field which might not be needed)
+      const payload = { remarks: updatedRemarks };
+
       await axios.patch(
         `http://localhost:3000/travel-requests/${id}/remarks`,
-        { remarks: updatedRemarks },
+        payload,
         getAuthHeaders()
       );
 
@@ -308,7 +457,13 @@ const AOadminOfficerDashboard = () => {
       setRemarkText("");
     } catch (error) {
       console.error("Failed to submit remark:", error);
-      showSnackbar("Failed to submit remark. Please try again.", 'error');
+      
+      if (error.response) {
+        console.error("Error response:", error.response.data);
+        showSnackbar(`Failed to submit remark: ${error.response.data.message || "Server error"}`, 'error');
+      } else {
+        showSnackbar("Failed to submit remark. Please try again.", 'error');
+      }
     }
   };
 
@@ -344,6 +499,10 @@ const AOadminOfficerDashboard = () => {
   });
 
   const getStatusTitle = () => {
+    if (viewMode === "department") {
+      return "ADMINISTRATIVE DEPARTMENT REQUESTS";
+    }
+    
     if (showExpiredFilter) {
       return "EXPIRED TRAVEL ORDERS";
     }
@@ -718,6 +877,56 @@ const AOadminOfficerDashboard = () => {
     );
   };
 
+  // Add department-specific handlers
+  const handleDeptSearchChange = (e) => setDeptSearchTerm(e.target.value);
+  const handleDeptStatusChange = (e) => setDeptStatusFilter(e.target.value);
+
+  // Switch view mode with reset
+  const handleViewModeChange = (mode) => {
+    // Reset expanded state and remark text when switching views
+    setExpandedId(null);
+    setRemarkText("");
+    setViewMode(mode);
+  };
+
+  // Render toggle buttons for switching between views
+  const renderToggleButtons = () => {
+    return (
+      <div className="view-toggle-container">
+        <button 
+          className={`view-toggle-button ${viewMode === "officer" ? "active" : ""}`}
+          onClick={() => handleViewModeChange("officer")}
+        >
+          Administrative Officer View
+        </button>
+        <button 
+          className={`view-toggle-button ${viewMode === "department" ? "active" : ""}`}
+          onClick={() => handleViewModeChange("department")}
+        >
+          Department Officer View
+        </button>
+      </div>
+    );
+  };
+
+  // Specific department view filters
+  const departmentRequests = travelOrders.filter(order => {
+    // First filter for Administrative Office department
+    const isAdminDept = order.department && 
+      (order.department.toLowerCase().includes("administrative office") || 
+       order.department.toLowerCase().includes("admin office"));
+    
+    // Then apply department-specific filters
+    const matchesSearch =
+      order.teacherName.toLowerCase().includes(deptSearchTerm.toLowerCase()) ||
+      order.id.toString().includes(deptSearchTerm);
+    const matchesStatus =
+      deptStatusFilter === "all" || order.validationStatus === deptStatusFilter;
+    
+    // Return true only if it matches ALL conditions
+    return isAdminDept && matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
@@ -742,217 +951,370 @@ const AOadminOfficerDashboard = () => {
         </div>
       </header>
       <div className="admin-container">
-        <div className="validation-summary">
-          <div className="summary-card">
-            <h3>Total Requests</h3>
-            <p>{validationSummary.total}</p>
-          </div>
-          <div className="summary-card pending">
-            <h3>Pending</h3>
-            <p>{validationSummary.pending}</p>
-          </div>
-          <div className="summary-card validated">
-            <h3>Validated</h3>
-            <p>{validationSummary.validated}</p>
-          </div>
-          <div className="summary-card rejected">
-            <h3>Rejected</h3>
-            <p>{validationSummary.rejected}</p>
-          </div>
-          <div className="summary-card expired">
-            <h3>Expired</h3>
-            <p>{validationSummary.expired}</p>
-          </div>
-        </div>
-        <div className="search-filter-container">
-          <div className="search-container">
-            <label htmlFor="search">Search:</label>
-            <input
-              type="text"
-              id="search"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Search by name or ID"
-            />
-          </div>
-          <div className="filter-container">
-            <label htmlFor="statusFilter">Status:</label>
-            <select
-              id="statusFilter"
-              value={statusFilter}
-              onChange={handleStatusChange}
-            >
-              <option value="all">All</option>
-              <option value="PENDING">Pending</option>
-              <option value="VALIDATED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
-          </div>
-          <div className="filter-container">
-            <label htmlFor="departmentFilter">Department:</label>
-            <select
-              id="departmentFilter"
-              value={departmentFilter}
-              onChange={handleDepartmentChange}
-            >
-              <option value="All Departments">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label htmlFor="expiredFilter">
-              <input
-                id="expiredFilter"
-                type="checkbox"
-                checked={showExpiredFilter}
-                onChange={(e) => setShowExpiredFilter(e.target.checked)}
-              />
-              Show Expired Only
-            </label>
-          </div>
-          <div className="filter-container">
-            <button 
-              className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
-              onClick={handleCheckExpiredCodes}
-              disabled={isCheckingExpiredCodes}
-            >
-              <RefreshCw className="refresh-icon" size={16} />
-              {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
-            </button>
-          </div>
-        </div>
-        <div className="orders-container">
-          <h2>{getStatusTitle()}</h2>
-          <div className="orders-list">
-            {filteredOrders.map((order) => (
-              <div
-                key={order.id}
-                className={`order-item ${
-                  expandedId === order.id ? "expanded" : ""
-                } ${order.validationStatus.toLowerCase()}`}
-                onClick={() => handleOrderClick(order.id)}
-              >
-                <div className="order-header">
-                  <span className="teacher-name">{order.teacherName}</span>
-                  <span className="department-info">{order.department}</span>
-                  <div className="order-status-container">
-                    <span className={getStatusBadgeClass(
-                      order.status, 
-                      order.validationStatus, 
-                      order.isCodeExpired
-                    )}>
-                      {getStatusDisplayText(
-                        order.status, 
-                        order.validationStatus, 
-                        order.isCodeExpired
-                      )}
-                    </span>
-                    <span className="order-date">
-                      {order.startDate} to {order.endDate}
-                    </span>
-                  </div>
-                </div>
-                {expandedId === order.id && (
-                  <div className="order-details">
-                    <div className="detail-row">
-                      <label>Purpose:</label>
-                      <p>{order.purpose}</p>
+        {renderToggleButtons()}
+        
+        {viewMode === "officer" ? (
+          // OFFICER VIEW
+          <>
+            <div className="validation-summary">
+              <div className="summary-card">
+                <h3>Total Requests</h3>
+                <p>{validationSummary.total}</p>
+              </div>
+              <div className="summary-card pending">
+                <h3>Pending</h3>
+                <p>{validationSummary.pending}</p>
+              </div>
+              <div className="summary-card validated">
+                <h3>Validated</h3>
+                <p>{validationSummary.validated}</p>
+              </div>
+              <div className="summary-card rejected">
+                <h3>Rejected</h3>
+                <p>{validationSummary.rejected}</p>
+              </div>
+              <div className="summary-card expired">
+                <h3>Expired</h3>
+                <p>{validationSummary.expired}</p>
+              </div>
+            </div>
+            
+            <div className="search-filter-container">
+              <div className="search-container">
+                <label htmlFor="search">Search:</label>
+                <input
+                  type="text"
+                  id="search"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  placeholder="Search by name or ID"
+                />
+              </div>
+              <div className="filter-container">
+                <label htmlFor="statusFilter">Status:</label>
+                <select
+                  id="statusFilter"
+                  value={statusFilter}
+                  onChange={handleStatusChange}
+                >
+                  <option value="all">All</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="VALIDATED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+              <div className="filter-container">
+                <label htmlFor="departmentFilter">Department:</label>
+                <select
+                  id="departmentFilter"
+                  value={departmentFilter}
+                  onChange={handleDepartmentChange}
+                >
+                  <option value="All Departments">All Departments</option>
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label htmlFor="expiredFilter">
+                  <input
+                    id="expiredFilter"
+                    type="checkbox"
+                    checked={showExpiredFilter}
+                    onChange={(e) => setShowExpiredFilter(e.target.checked)}
+                  />
+                  Show Expired Only
+                </label>
+              </div>
+              <div className="filter-container">
+                <button 
+                  className={`check-expired-button ${isCheckingExpiredCodes ? 'loading' : ''}`}
+                  onClick={handleCheckExpiredCodes}
+                  disabled={isCheckingExpiredCodes}
+                >
+                  <RefreshCw className="refresh-icon" size={16} />
+                  {isCheckingExpiredCodes ? 'Checking...' : 'Check Expired Codes'}
+                </button>
+              </div>
+            </div>
+            
+            <div className="orders-container">
+              <h2>{getStatusTitle()}</h2>
+              <div className="orders-list">
+                {filteredOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className={`order-item ${
+                      expandedId === order.id ? "expanded" : ""
+                    } ${order.isCodeExpired ? "expired" : order.validationStatus.toLowerCase()}`}
+                    onClick={() => handleOrderClick(order.id)}
+                  >
+                    <div className="order-header">
+                      <span className="teacher-name">{order.teacherName}</span>
+                      <span className="department-info">{order.department}</span>
+                      <div className="order-status-container">
+                        <span className={getStatusBadgeClass(
+                          order.status, 
+                          order.validationStatus, 
+                          order.isCodeExpired
+                        )}>
+                          {getStatusDisplayText(
+                            order.status, 
+                            order.validationStatus, 
+                            order.isCodeExpired
+                          )}
+                        </span>
+                        <span className="order-date">
+                          {order.startDate} to {order.endDate}
+                        </span>
+                      </div>
                     </div>
+                    {expandedId === order.id && (
+                      <div className="order-details">
+                        <div className="detail-row">
+                          <label>Purpose:</label>
+                          <p>{order.purpose}</p>
+                        </div>
 
-                    {/* Display security code for accepted travel requests */}
-                    {order.status === "accepted" && (
-                      <div className="detail-row">
-                        <label>Security Code:</label>
-                        {order.isCodeExpired ? (
-                          <p className="security-code expired">
-                            {order.securityCode || "Code Expired"}
-                            <span className="expired-tag">(Expired)</span>
-                          </p>
-                        ) : (
-                          <p className="security-code">
-                            {order.securityCode}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    
-                    {order.remarks && order.remarks.trim() && (
-                      <div className="existing-remarks">
-                        <label>Existing Remarks:</label>
-                        {order.remarks.split('\n').map((rem, idx) => (
-                          <p key={idx} className="remarks-line">
-                            {rem.trim()}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="remark-section">
-                      <label htmlFor={`remark-${order.id}`}>New Remark:</label>
-                      <textarea
-                        id={`remark-${order.id}`}
-                        value={remarkText}
-                        onChange={handleRemarkChange}
-                        placeholder="Add your remark here..."
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <button
-                        className="submit-remark-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSubmitRemark(order.id);
-                        }}
-                      >
-                        Submit Remark
-                      </button>
-                    </div>
-                    
-                    {order.validationStatus === "PENDING" && (
-                      <div className="action-buttons">
-                        {!order.remarks.includes(`${currentUser?.first_name} ${currentUser?.last_name}`) ? (
-                          <div className="remark-notification">
-                            Please submit a remark before approval options will appear
+                        {/* Display security code for accepted travel requests */}
+                        {order.status === "accepted" && (
+                          <div className="detail-row">
+                            <label>Security Code:</label>
+                            {order.isCodeExpired ? (
+                              <p className="security-code expired">
+                                {order.securityCode || "Code Expired"}
+                                <span className="expired-tag">(Expired)</span>
+                              </p>
+                            ) : (
+                              <p className="security-code">
+                                {order.securityCode}
+                              </p>
+                            )}
                           </div>
-                        ) : (
-                          <>
-                            <button
-                              className="validate-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleValidateClick(order.id);
-                              }}
-                              disabled={!checkAnyDepartmentRemarks(order)}
-                              title={
-                                !checkAnyDepartmentRemarks(order) 
-                                  ? "At least one department must add a remark before approval" 
-                                  : "Approve this travel request"
-                              }
-                            >
-                              APPROVE
-                            </button>
-                            <button
-                              className="reject-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(order.id);
-                              }}
-                            >
-                              Reject
-                            </button>
-                          </>
+                        )}
+                        
+                        {order.remarks && order.remarks.trim() && (
+                          <div className="existing-remarks">
+                            <label>Existing Remarks:</label>
+                            {order.remarks.split('\n').map((rem, idx) => (
+                              <p key={idx} className="remarks-line">
+                                {rem.trim()}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="remark-section">
+                          <label htmlFor={`remark-${order.id}`}>New Remark:</label>
+                          <textarea
+                            id={`remark-${order.id}`}
+                            value={remarkText}
+                            onChange={handleRemarkChange}
+                            placeholder="Add your remark here..."
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            className="submit-remark-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSubmitRemark(order.id);
+                            }}
+                          >
+                            Submit Remark
+                          </button>
+                        </div>
+                        
+                        {order.validationStatus === "PENDING" && (
+                          <div className="action-buttons">
+                            {!order.remarks.includes(`${currentUser?.first_name} ${currentUser?.last_name}`) ? (
+                              <div className="remark-notification">
+                                Please submit a remark before approval options will appear
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  className="validate-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleValidateClick(order.id);
+                                  }}
+                                  disabled={!checkAnyDepartmentRemarks(order)}
+                                  title={
+                                    !checkAnyDepartmentRemarks(order) 
+                                      ? "All departments must add remarks before approval" 
+                                      : "Approve this travel request"
+                                  }
+                                >
+                                  APPROVE
+                                </button>
+                                <button
+                                  className="reject-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReject(order.id);
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                                
+                                {!checkAnyDepartmentRemarks(order) && (
+                                  <div className="missing-departments">
+                                    <p>Missing remarks from departments:</p>
+                                    <ul>
+                                      {getMissingDepartments(order).map(dept => (
+                                        <li key={dept}>{dept}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
                     )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          // DEPARTMENT OFFICER VIEW
+          <>
+            <div className="validation-summary">
+              <div className="summary-card">
+                <h3>Total Requests</h3>
+                <p>{deptRequestSummary.total}</p>
+              </div>
+              <div className="summary-card pending">
+                <h3>Pending</h3>
+                <p>{deptRequestSummary.pending}</p>
+              </div>
+              <div className="summary-card validated">
+                <h3>Validated</h3>
+                <p>{deptRequestSummary.validated}</p>
+              </div>
+              <div className="summary-card rejected">
+                <h3>Rejected</h3>
+                <p>{deptRequestSummary.rejected}</p>
+              </div>
+              <div className="summary-card expired">
+                <h3>Expired</h3>
+                <p>{deptRequestSummary.expired}</p>
+              </div>
+            </div>
+            
+            <div className="search-filter-container">
+              <div className="search-container">
+                <label htmlFor="deptSearch">Search:</label>
+                <input
+                  type="text"
+                  id="deptSearch"
+                  value={deptSearchTerm}
+                  onChange={handleDeptSearchChange}
+                  placeholder="Search by name or ID"
+                />
+              </div>
+              <div className="filter-container">
+                <label htmlFor="deptStatusFilter">Status:</label>
+                <select
+                  id="deptStatusFilter"
+                  value={deptStatusFilter}
+                  onChange={handleDeptStatusChange}
+                >
+                  <option value="all">All</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="VALIDATED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="orders-container">
+              <h2>ADMINISTRATIVE DEPARTMENT REQUESTS</h2>
+              <div className="orders-list">
+                {departmentRequests.map((order) => (
+                  <div
+                    key={order.id}
+                    className={`order-item ${
+                      expandedId === order.id ? "expanded" : ""
+                    } ${order.isCodeExpired ? "expired" : order.validationStatus.toLowerCase()}`}
+                    onClick={() => handleOrderClick(order.id)}
+                  >
+                    <div className="order-header">
+                      <span className="teacher-name">{order.teacherName}</span>
+                      <span className="department-info">{order.department}</span>
+                      <div className="order-status-container">
+                        <span className={getStatusBadgeClass(
+                          order.status, 
+                          order.validationStatus, 
+                          order.isCodeExpired
+                        )}>
+                          {getStatusDisplayText(
+                            order.status, 
+                            order.validationStatus, 
+                            order.isCodeExpired
+                          )}
+                        </span>
+                        <span className="order-date">
+                          {order.startDate} to {order.endDate}
+                        </span>
+                      </div>
+                    </div>
+                    {expandedId === order.id && (
+                      <div className="order-details">
+                        <div className="detail-row">
+                          <label>Purpose:</label>
+                          <p>{order.purpose}</p>
+                        </div>
+                        
+                        {order.remarks && order.remarks.trim() && (
+                          <div className="existing-remarks">
+                            <label>Existing Remarks:</label>
+                            {order.remarks.split('\n').map((rem, idx) => (
+                              <p key={idx} className="remarks-line">
+                                {rem.trim()}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="remark-section">
+                          <label htmlFor={`remark-${order.id}`}>Department Remark:</label>
+                          <textarea
+                            id={`remark-${order.id}`}
+                            value={remarkText}
+                            onChange={handleRemarkChange}
+                            placeholder="Add your department remark here..."
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            className="submit-remark-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSubmitRemark(order.id);
+                            }}
+                          >
+                            Submit Department Remark
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {departmentRequests.length === 0 && (
+                  <div className="no-orders">
+                    <p>No Administrative Department requests found.</p>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
       
       {/* Receipt Modal */}
