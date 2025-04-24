@@ -286,7 +286,6 @@ const ProfilePage = () => {
                   <div className="confirmation-details">
                     <p><strong>Name:</strong> {personalInfo.first_name} {personalInfo.last_name}</p>
                     <p><strong>Email:</strong> {personalInfo.email}</p>
-
                     <p><strong>Contact:</strong> {personalInfo.contact_no}</p>
                   </div>
                 </div>
@@ -355,18 +354,6 @@ const ProfilePage = () => {
                 className={`uneditable ${errors.email ? "error" : ""}`}
               />
               {errors.email && <span className="error-message">{errors.email}</span>}
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-
-
-
-                onChange={handlePersonalInfoChange}
-                disabled={!isEditing || redirecting}
-
-              />
-
             </div>
             <div className="form-group">
               <input

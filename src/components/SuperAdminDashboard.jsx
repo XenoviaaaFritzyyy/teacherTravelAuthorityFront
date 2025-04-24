@@ -477,7 +477,6 @@ const SuperAdminDashboard = () => {
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Username</th>
                       <th>Password</th>
                       <th>First Name</th>
                       <th>Last Name</th>
@@ -496,13 +495,6 @@ const SuperAdminDashboard = () => {
                     {filteredUsers.map((user) => (
                       <tr key={user.id}>
                         <td>{user.id}</td>
-                        <td>
-                          <input
-                            type="text"
-                            value={editedUsers[user.id]?.username || user.username}
-                            onChange={(e) => handleUserChange(user.id, "username", e.target.value)}
-                          />
-                        </td>
                         <td>
                           <input
                             type="password"

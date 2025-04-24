@@ -63,7 +63,6 @@ export const UserProvider = ({ children }) => {
       "first_name",
       "last_name",
       "email",
-      "username",
       "contact_no",
       "employee_number",
       "school_id",

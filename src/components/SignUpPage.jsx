@@ -9,7 +9,6 @@ const SignUpPage = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -31,7 +30,6 @@ const SignUpPage = () => {
 
     if (!formData.firstName) tempErrors.firstName = "First name is required"
     if (!formData.lastName) tempErrors.lastName = "Last name is required"
-    if (!formData.username) tempErrors.username = "Username is required"
 
     if (!formData.email) {
       tempErrors.email = "Email is required"
@@ -68,7 +66,6 @@ const SignUpPage = () => {
                     password: formData.password,
                     first_name: formData.firstName,
                     last_name: formData.lastName,
-                    username: formData.username,
                     email: formData.email,
                     role: "TEACHER",  // Make sure this matches your UserRole enum
                     // Add default values for optional fields
@@ -137,21 +134,6 @@ const SignUpPage = () => {
                 className={errors.lastName ? "error" : ""}
               />
               {errors.lastName && <span className="error-message">{errors.lastName}</span>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Username"
-                value={formData.username}
-                onChange={handleChange}
-                className={errors.username ? "error" : ""}
-              />
-              {errors.username && <span className="error-message">{errors.username}</span>}
             </div>
           </div>
 
