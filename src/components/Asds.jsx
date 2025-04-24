@@ -8,6 +8,8 @@ import "./Asds.css"
 import Navbar from "./Navbar"
 import RequestForm from "./RequestForm"
 import PendingRequestsTable from "./PendingRequestsTable"
+import RequestSummary from "./RequestSummary"
+import AllRequestsTable from "./AllRequestsTable"
 
 const Asds = () => {
     const location = useLocation()
@@ -81,6 +83,14 @@ const Asds = () => {
                         </div>
                     )}
                     
+                    <div className="dashboard-header">
+                        <h2>ASDS Dashboard</h2>
+                        <p>Manage travel requests and oversee system activity</p>
+                    </div>
+                    
+                    {/* Request Summary Stats */}
+                    <RequestSummary />
+                    
                     <div className="dashboard-tabs">
                         <button 
                             className={`tab-button ${activeTab === "request" ? "active" : ""}`}
@@ -94,12 +104,20 @@ const Asds = () => {
                         >
                             Validate Requests {unviewedCount > 0 && <span className="unviewed-badge">{unviewedCount}</span>}
                         </button>
+                        <button 
+                            className={`tab-button ${activeTab === "all" ? "active" : ""}`}
+                            onClick={() => setActiveTab("all")}
+                        >
+                            All Requests
+                        </button>
                     </div>
                     
                     {activeTab === "request" ? (
                         <RequestForm />
-                    ) : (
+                    ) : activeTab === "validate" ? (
                         <PendingRequestsTable onUnviewedCountChange={setUnviewedCount} />
+                    ) : (
+                        <AllRequestsTable />
                     )}
                 </div>
             </main>

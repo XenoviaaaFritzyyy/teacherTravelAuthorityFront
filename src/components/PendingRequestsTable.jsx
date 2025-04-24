@@ -280,13 +280,15 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
 
   // Get role-specific title
   const getRoleTitle = () => {
-    switch (user?.position) {
-      case "principal":
-        return "Validate Requests";
-      case "psds":
-        return "Validate Requests";
-      case "asds":
-        return "Validate Requests";
+    switch (user?.role) {
+      case "Principal":
+        return "Validate Teacher Requests";
+      case "PSDS":
+        return "Validate Principal Requests";
+      case "ASDS":
+        return "Validate PSDS Requests";
+      case "SDS":
+        return "Validate ASDS Requests";
       default:
         return "Validate Requests";
     }
@@ -298,11 +300,13 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
     
     switch (user.role) {
       case "Principal":
-        return "No pending requests from teachers in your school or from ASDS at this time.";
+        return "No pending requests from teachers in your school at this time.";
       case "PSDS":
-        return "No pending requests from principals in your district at this time.";
+        return `No pending requests from principals in ${user.district} district at this time.`;
       case "ASDS":
         return "No pending requests from PSDS at this time.";
+      case "SDS":
+        return "No pending requests from ASDS at this time.";
       default:
         return "No pending requests require your validation at this time.";
     }

@@ -64,3 +64,52 @@
     font-size: 12px;
     margin-left: 8px;
 }
+
+/* Dashboard tabs */
+.dashboard-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+  
+.tab-button {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+  
+.tab-button:hover {
+    color: #1e3a8a;
+}
+  
+.tab-button.active {
+    color: #1e3a8a;
+    border-bottom-color: #1e3a8a;
+}
+
+@media (max-width: 768px) {
+    .dashboard-main {
+        padding: 1rem;
+    }
+    
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .dashboard-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        flex: 1 0 auto;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+}

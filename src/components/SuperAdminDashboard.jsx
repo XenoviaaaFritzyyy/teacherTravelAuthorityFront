@@ -59,6 +59,18 @@ const districtOptions = [
   "San Remigio I","San Remigio II","Santa Fe","Santander","Sibonga","Sogod","Tabogon","Tabuelan","Tuburan I","Tuburan II","Tudela"
 ];
 
+// List of Administrative Officer positions
+const adminOfficerPositions = [
+  "Administrative Officer I",
+  "Administrative Officer II",
+  "Administrative Officer III",
+  "Administrative Officer IV",
+  "Administrative Officer V",
+  "Senior Administrative Officer",
+  "Chief Administrative Officer",
+  "Administrative Assistant"
+];
+
 const SuperAdminDashboard = () => {
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();

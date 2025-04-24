@@ -1,0 +1,150 @@
+.all-requests-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.filter-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.filter-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.status-filter select,
+.role-filter select {
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  min-width: 150px;
+  font-size: 14px;
+}
+
+.requests-table-wrapper {
+  overflow-x: auto;
+}
+
+.requests-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.requests-table th,
+.requests-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.requests-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.requests-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.requests-table td {
+  vertical-align: middle;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-validated {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-expired {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.code-expired {
+  color: #6c757d;
+  text-decoration: line-through;
+}
+
+.expired-tag {
+  font-size: 12px;
+  color: #dc3545;
+  margin-left: 5px;
+}
+
+.no-requests {
+  padding: 2rem;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  color: #6c757d;
+}
+
+.requests-loading {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .filter-controls {
+    flex-direction: column;
+  }
+  
+  .search-box {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .filter-group {
+    flex-direction: column;
+  }
+  
+  .status-filter,
+  .role-filter {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .status-filter select,
+  .role-filter select {
+    width: 100%;
+  }
+} 

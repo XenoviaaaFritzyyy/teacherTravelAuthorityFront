@@ -7,6 +7,8 @@ import axios from "axios"
 import "./Sds.css"
 import Navbar from "./Navbar"
 import PendingRequestsTable from "./PendingRequestsTable"
+import RequestSummary from "./RequestSummary"
+import AllRequestsTable from "./AllRequestsTable"
 
 const Sds = () => {
     const location = useLocation()
@@ -14,6 +16,7 @@ const Sds = () => {
     const { user } = useUser()
     const [showWelcome, setShowWelcome] = useState(false)
     const [unviewedCount, setUnviewedCount] = useState(0)
+    const [activeTab, setActiveTab] = useState("pending")
 
     useEffect(() => {
         // Check if user exists and has required fields
@@ -81,13 +84,34 @@ const Sds = () => {
                     
                     <div className="dashboard-header">
                         <h2>SDS Dashboard</h2>
-                        <p>Review and validate travel requests from ASDS</p>
+                        <p>Review travel requests and monitor system activity</p>
                     </div>
                     
-                    <div className="validate-section">
-                        <h3>Pending Requests {unviewedCount > 0 && <span className="unviewed-badge">{unviewedCount}</span>}</h3>
-                        <PendingRequestsTable onUnviewedCountChange={setUnviewedCount} />
+                    {/* Request Summary Stats */}
+                    <RequestSummary />
+                    
+                    <div className="dashboard-tabs">
+                        <button 
+                            className={`tab-button ${activeTab === "pending" ? "active" : ""}`}
+                            onClick={() => setActiveTab("pending")}
+                        >
+                            Pending Requests {unviewedCount > 0 && <span className="unviewed-badge">{unviewedCount}</span>}
+                        </button>
+                        <button 
+                            className={`tab-button ${activeTab === "all" ? "active" : ""}`}
+                            onClick={() => setActiveTab("all")}
+                        >
+                            All Requests
+                        </button>
                     </div>
+                    
+                    {activeTab === "pending" ? (
+                        <div className="validate-section">
+                            <PendingRequestsTable onUnviewedCountChange={setUnviewedCount} />
+                        </div>
+                    ) : (
+                        <AllRequestsTable />
+                    )}
                 </div>
             </main>
         </div>
