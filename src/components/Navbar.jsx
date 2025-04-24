@@ -112,7 +112,7 @@ const Navbar = () => {
               <div className="dropdown profile-dropdown">
                 <div className="profile-info">
                   <h3>
-                    {user?.firstName || "User"} {user?.lastName || ""}
+                    {user?.first_name || ""} {user?.last_name || ""}
                   </h3>
                   <p>{user?.position || "Teacher"}</p>
                 </div>

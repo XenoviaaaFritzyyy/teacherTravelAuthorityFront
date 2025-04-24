@@ -6,6 +6,67 @@ import { useUser } from "../context/UserContext"
 import Navbar from "./Navbar"
 import "./ProfilePage.css"
 
+const districtOptions = [
+  "Alcantara",
+  "Alcoy",
+  "Alegria",
+  "Aloguinsan",
+  "Argao I",
+  "Argao II",
+  "Asturias I",
+  "Asturias II",
+  "Badian",
+  "Balamban I",
+  "Balamban II",
+  "Bantayan I",
+  "Bantayan II",
+  "Barili I",
+  "Barili II",
+  "Boljoon",
+  "Borbon",
+  "Carmen",
+  "Catmon",
+  "Compostela",
+  "Consolacion I",
+  "Consolacion II",
+  "Cordova",
+  "Dalaguete I",
+  "Dalaguete II",
+  "Daanbantayan I",
+  "Daanbantayan II",
+  "Dumanjug I",
+  "Dumanjug II",
+  "Ginatilan",
+  "Liloan",
+  "Madridejos",
+  "Malabuyoc",
+  "Medellin",
+  "Minglanilla I",
+  "Minglanilla II",
+  "Moalboal",
+  "Oslob",
+  "Pilar",
+  "Pinamungajan I",
+  "Pinamungajan II",
+  "Poro",
+  "Ronda",
+  "Samboan",
+  "San Fernando I",
+  "San Fernando II",
+  "San Francisco",
+  "San Remigio I",
+  "San Remigio II",
+  "Santa Fe",
+  "Santander",
+  "Sibonga",
+  "Sogod",
+  "Tabogon",
+  "Tabuelan",
+  "Tuburan I",
+  "Tuburan II",
+  "Tudela"
+];
+
 const ProfilePage = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -20,7 +81,6 @@ const ProfilePage = () => {
     first_name: "",
     last_name: "",
     email: "",
-    username: "",
     contact_no: "",
   })
 
@@ -65,7 +125,7 @@ const ProfilePage = () => {
             first_name: userData.first_name || "",
             last_name: userData.last_name || "",
             email: userData.email || "",
-            username: userData.username || "",
+
             contact_no: userData.contact_no || "",
           })
           setProfessionalInfo({
@@ -117,7 +177,7 @@ const ProfilePage = () => {
     if (!personalInfo.first_name) tempErrors.first_name = "First name is required"
     if (!personalInfo.last_name) tempErrors.last_name = "Last name is required"
     if (!personalInfo.email) tempErrors.email = "Email is required"
-    if (!personalInfo.username) tempErrors.username = "Username is required"
+
     if (!personalInfo.contact_no) tempErrors.contact_no = "Mobile number is required"
 
     // Only validate professional info if profile is not complete yet
@@ -226,7 +286,7 @@ const ProfilePage = () => {
                   <div className="confirmation-details">
                     <p><strong>Name:</strong> {personalInfo.first_name} {personalInfo.last_name}</p>
                     <p><strong>Email:</strong> {personalInfo.email}</p>
-                    <p><strong>Username:</strong> {personalInfo.username}</p>
+
                     <p><strong>Contact:</strong> {personalInfo.contact_no}</p>
                   </div>
                 </div>
@@ -256,7 +316,7 @@ const ProfilePage = () => {
         )}
 
         <div className="profile-section">
-          <h2>TEACHER INFORMATION</h2>
+          <h2>PERSONNEL INFORMATION</h2>
 
           {/* Personal Information */}
           <div className="info-card">
@@ -299,14 +359,14 @@ const ProfilePage = () => {
             <div className="form-group">
               <input
                 type="text"
-                name="username"
-                placeholder="Username"
-                value={personalInfo.username}
+
+
+
                 onChange={handlePersonalInfoChange}
                 disabled={!isEditing || redirecting}
-                className={errors.username ? "error" : ""}
+
               />
-              {errors.username && <span className="error-message">{errors.username}</span>}
+
             </div>
             <div className="form-group">
               <input
@@ -324,11 +384,9 @@ const ProfilePage = () => {
 
           {/* Professional Information */}
           <div className="info-card">
-            {isProfileComplete && (
-              <div className="admin-note">
-                <p>To update professional information, please contact the administrator.</p>
-              </div>
-            )}
+            <div className="admin-note">
+              <p>To update professional information, please contact the administrator.</p>
+            </div>
             <div className="form-group">
               <input
                 type="text"
@@ -366,22 +424,25 @@ const ProfilePage = () => {
               {errors.school_name && <span className="error-message">{errors.school_name}</span>}
             </div>
             <div className="form-group">
-              <input
-                type="text"
+              <select
                 name="district"
-                placeholder="District"
                 value={professionalInfo.district}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}
                 className={`${isProfileComplete ? "uneditable" : ""} ${errors.district ? "error" : ""}`}
-              />
+              >
+                <option value="">Select District</option>
+                {districtOptions.map((district) => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </select>
               {errors.district && <span className="error-message">{errors.district}</span>}
             </div>
             <div className="form-group">
               <input
                 type="text"
                 name="position"
-                placeholder="Position"
+                placeholder="Plantilla Position"
                 value={professionalInfo.position}
                 onChange={handleProfessionalInfoChange}
                 disabled={isProfileComplete || !isEditing || redirecting}

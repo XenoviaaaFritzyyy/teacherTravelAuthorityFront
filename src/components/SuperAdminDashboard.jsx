@@ -49,10 +49,18 @@ const departments = [
   "Supply"
 ];
 
+// List of all districts
+const districtOptions = [
+  "Alcantara","Alcoy","Alegria","Aloguinsan","Argao I","Argao II","Asturias I","Asturias II","Badian","Balamban I","Balamban II","Bantayan I","Bantayan II","Barili I","Barili II","Boljoon","Borbon","Carmen","Catmon","Compostela","Consolacion I","Consolacion II","Cordova","Dalaguete I","Dalaguete II","Daanbantayan I","Daanbantayan II","Dumanjug I","Dumanjug II","Ginatilan","Liloan","Madridejos","Malabuyoc","Medellin","Minglanilla I","Minglanilla II","Moalboal","Oslob","Pilar","Pinamungajan I","Pinamungajan II","Poro","Ronda","Samboan","San Fernando I","San Fernando II","San Francisco","San Remigio I","San Remigio II","Santa Fe","Santander","Sibonga","Sogod","Tabogon","Tabuelan","Tuburan I","Tuburan II","Tudela"
+];
+
 const SuperAdminDashboard = () => {
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  // District editing state
+  const [editingDistrictUserId, setEditingDistrictUserId] = useState(null);
+  const [editingDistrictValue, setEditingDistrictValue] = useState("");
   const [editedUsers, setEditedUsers] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -365,6 +373,29 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const handleEditDistrict = (userId, currentDistrict) => {
+    setEditingDistrictUserId(userId);
+    setEditingDistrictValue(currentDistrict || "");
+  };
+
+  const handleSaveDistrict = (userId) => {
+    setEditedUsers(prev => ({
+      ...prev,
+      [userId]: {
+        ...prev[userId],
+        district: editingDistrictValue
+      }
+    }));
+    setHasChanges(true);
+    setEditingDistrictUserId(null);
+    setEditingDistrictValue("");
+  };
+
+  const handleCancelEditDistrict = () => {
+    setEditingDistrictUserId(null);
+    setEditingDistrictValue("");
+  };
+
   return (
     <div className="super-admin-dashboard">
       <header className="admin-header">
@@ -474,11 +505,20 @@ const SuperAdminDashboard = () => {
                           />
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            value={editedUsers[user.id]?.district || user.district}
-                            onChange={(e) => handleUserChange(user.id, "district", e.target.value)}
-                          />
+                          <select
+                            value={editedUsers[user.id]?.district || user.district || ""}
+                            onChange={e => handleUserChange(user.id, "district", e.target.value)}
+                          >
+                            {user.district && !districtOptions.includes(user.district) && (
+                              <option value={user.district} disabled>
+                                {user.district} (not in options)
+                              </option>
+                            )}
+                            <option value="">Select District</option>
+                            {districtOptions.map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
                         </td>
                         <td>
                           <input

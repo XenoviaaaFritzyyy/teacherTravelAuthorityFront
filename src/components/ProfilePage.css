@@ -136,7 +136,7 @@
   
   .admin-note {
     background-color: #e7f3fe;
-    border-left: 4px solid #2196F3;
+    border-left: 4px solid #ff0000;
     padding: 12px 15px;
     margin-bottom: 20px;
     border-radius: 4px;
@@ -144,7 +144,7 @@
   
   .admin-note p {
     margin: 0;
-    color: #0c5460;
+    color: #ff0000;
     font-size: 14px;
     font-weight: 500;
   }
@@ -190,11 +190,11 @@
 
   .confirmation-warning {
     background-color: #e7f3fe;
-    border-left: 4px solid #2196F3;
+    border-left: 4px solid #ff0000;
     padding: 12px 15px;
     margin-bottom: 20px;
     border-radius: 4px;
-    color: #0c5460;
+    color: #ff0000;
     font-weight: 500;
   }
 

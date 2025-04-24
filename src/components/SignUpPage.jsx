@@ -9,8 +9,8 @@ const SignUpPage = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     username: "",
+    email: "",
     password: "",
     confirmPassword: "",
   })
@@ -31,14 +31,13 @@ const SignUpPage = () => {
 
     if (!formData.firstName) tempErrors.firstName = "First name is required"
     if (!formData.lastName) tempErrors.lastName = "Last name is required"
+    if (!formData.username) tempErrors.username = "Username is required"
 
     if (!formData.email) {
       tempErrors.email = "Email is required"
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       tempErrors.email = "Email is invalid"
     }
-
-    if (!formData.username) tempErrors.username = "Username is required"
 
     if (!formData.password) {
       tempErrors.password = "Password is required"
@@ -66,10 +65,10 @@ const SignUpPage = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username: formData.username,
                     password: formData.password,
                     first_name: formData.firstName,
                     last_name: formData.lastName,
+                    username: formData.username,
                     email: formData.email,
                     role: "TEACHER",  // Make sure this matches your UserRole enum
                     // Add default values for optional fields
@@ -144,19 +143,6 @@ const SignUpPage = () => {
           <div className="form-row">
             <div className="form-group">
               <input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                className={errors.email ? "error" : ""}
-              />
-              {errors.email && <span className="error-message">{errors.email}</span>}
-            </div>
-
-            <div className="form-group">
-              <input
                 type="text"
                 id="username"
                 name="username"
@@ -166,6 +152,21 @@ const SignUpPage = () => {
                 className={errors.username ? "error" : ""}
               />
               {errors.username && <span className="error-message">{errors.username}</span>}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? "error" : ""}
+              />
+              {errors.email && <span className="error-message">{errors.email}</span>}
             </div>
           </div>
 
@@ -197,7 +198,7 @@ const SignUpPage = () => {
             </div>
           </div>
 
-          {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
+          {errors.submit && <span className="error-message submit-error">{errors.submit}</span>}
 
           <button type="submit" className="signup-button" disabled={isLoading}>
             {isLoading ? "SIGNING UP..." : "SIGN UP"}
