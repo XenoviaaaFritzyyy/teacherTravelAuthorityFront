@@ -48,6 +48,17 @@ const departments = [
   "Supply"
 ];
 
+// List of all districts
+const districtOptions = [
+  "Alcantara","Alcoy","Alegria","Aloguinsan","Argao I","Argao II","Asturias I",
+  "Asturias II","Badian","Balamban I","Balamban II","Bantayan I","Bantayan II","Barili I",
+  "Barili II","Boljoon","Borbon","Carmen","Catmon","Compostela","Consolacion I","Consolacion II",
+  "Cordova","Dalaguete I","Dalaguete II","Daanbantayan I","Daanbantayan II","Dumanjug I","Dumanjug II",
+  "Ginatilan","Liloan","Madridejos","Malabuyoc","Medellin","Minglanilla I","Minglanilla II","Moalboal","Oslob","Pilar",
+  "Pinamungajan I","Pinamungajan II","Poro","Ronda","Samboan","San Fernando I","San Fernando II","San Francisco",
+  "San Remigio I","San Remigio II","Santa Fe","Santander","Sibonga","Sogod","Tabogon","Tabuelan","Tuburan I","Tuburan II","Tudela"
+];
+
 const SuperAdminDashboard = () => {
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -528,7 +539,7 @@ const SuperAdminDashboard = () => {
                           />
                         </td>
                         <td>
-                          <select
+                        <select
                             value={editedUsers[user.id]?.district || user.district || ""}
                             onChange={e => handleUserChange(user.id, "district", e.target.value)}
                           >
