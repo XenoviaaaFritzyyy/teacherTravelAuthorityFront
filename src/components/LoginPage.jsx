@@ -56,7 +56,7 @@ const LoginPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          currentPassword: 'password123',
+          currentPassword: '@Password123',
           newPassword: newPassword,
         }),
       })

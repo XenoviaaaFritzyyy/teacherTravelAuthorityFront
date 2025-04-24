@@ -260,7 +260,7 @@ const SuperAdminDashboard = () => {
         {},
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
-      showSnackbar('Password has been reset to "password123". User will be required to change password on next login.', 'info');
+      showSnackbar('Password has been reset to "@Password123". User will be required to change password on next login.', 'info');
     } catch (error) {
       console.error("Failed to reset password:", error);
       showSnackbar("Failed to reset password. Please try again.", 'error');
