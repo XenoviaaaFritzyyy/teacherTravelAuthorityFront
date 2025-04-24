@@ -10,8 +10,7 @@ import { Bell, Home, RefreshCw, Users } from "lucide-react";
 // Replacing the original departments array with the one from AOadminDashboard
 const departments = [
   "Accounting",
-  "Administrative",
-  "Administrator",
+  "Administrative Office",
   "Assessment and Evaluation",
   "Assistant Schools Division Superintendent (Cluster A)",
   "Assistant Schools Division Superintendent (Cluster B)",
@@ -47,11 +46,6 @@ const departments = [
   "SGOD",
   "Soc. Mob",
   "Supply"
-];
-
-// List of all districts
-const districtOptions = [
-  "Alcantara","Alcoy","Alegria","Aloguinsan","Argao I","Argao II","Asturias I","Asturias II","Badian","Balamban I","Balamban II","Bantayan I","Bantayan II","Barili I","Barili II","Boljoon","Borbon","Carmen","Catmon","Compostela","Consolacion I","Consolacion II","Cordova","Dalaguete I","Dalaguete II","Daanbantayan I","Daanbantayan II","Dumanjug I","Dumanjug II","Ginatilan","Liloan","Madridejos","Malabuyoc","Medellin","Minglanilla I","Minglanilla II","Moalboal","Oslob","Pilar","Pinamungajan I","Pinamungajan II","Poro","Ronda","Samboan","San Fernando I","San Fernando II","San Francisco","San Remigio I","San Remigio II","Santa Fe","Santander","Sibonga","Sogod","Tabogon","Tabuelan","Tuburan I","Tuburan II","Tudela"
 ];
 
 const SuperAdminDashboard = () => {
@@ -150,17 +144,34 @@ const SuperAdminDashboard = () => {
 
   // User management handlers
   const handleUserChange = (id, field, value) => {
+    // If changing role to AO Admin Officer (Administrative Officer)
+    if (field === "role" && value === "AO Admin Officer") {
+      // Instead of automatically setting position, show the modal with admin officer positions
+      const user = users.find(u => u.id === id);
+      setUserToUpdate({
+        id,
+        currentPosition: user?.position || '',
+        newRole: value,
+        isAdminOfficer: true // Flag to indicate this is for admin officer selection
+      });
+      setShowPositionModal(true);
+      return;
+    }
+    
+    // If role is AO Admin (Department Officer), show department position modal
     if (field === "role" && value === "AO Admin") {
       const user = users.find(u => u.id === id);
       setUserToUpdate({
         id,
         currentPosition: user?.position || '',
-        newRole: value
+        newRole: value,
+        isAdminOfficer: false // Flag to indicate this is for department selection
       });
       setShowPositionModal(true);
       return;
     }
 
+    // For all other changes, handle normally
     setEditedUsers(prev => ({
       ...prev,
       [id]: {
@@ -240,23 +251,33 @@ const SuperAdminDashboard = () => {
 
     if (!show) return null;
 
+    // Determine if we're selecting an Administrative Officer position
+    const isAdminOfficer = userToUpdate?.isAdminOfficer || false;
+    const title = isAdminOfficer ? "Select Administrative Officer Position" : "Update Position";
+    const positionOptions = isAdminOfficer ? adminOfficerPositions : departments;
+    const promptText = isAdminOfficer 
+      ? "Select the specific Administrative Officer position for this user:"
+      : "This user's role is being changed. Would you like to update their position?";
+
     return (
       <div className="position-modal">
         <div className="position-modal-content">
-          <h3>Update Position</h3>
-          <p>This user's role is being changed. Would you like to update their position?</p>
+          <h3>{title}</h3>
+          <p>{promptText}</p>
           
           <div className="position-selection">
-            <label>
-              <input
-                type="checkbox"
-                checked={useCustomPosition}
-                onChange={(e) => setUseCustomPosition(e.target.checked)}
-              />
-              Use custom position
-            </label>
+            {!isAdminOfficer && (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={useCustomPosition}
+                  onChange={(e) => setUseCustomPosition(e.target.checked)}
+                />
+                Use custom position
+              </label>
+            )}
             
-            {useCustomPosition ? (
+            {(useCustomPosition && !isAdminOfficer) ? (
               <input
                 type="text"
                 value={newPosition}
@@ -268,9 +289,9 @@ const SuperAdminDashboard = () => {
                 value={newPosition}
                 onChange={(e) => setNewPosition(e.target.value)}
               >
-                <option value="">Select Department Position</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
+                <option value="">{isAdminOfficer ? "Select Officer Position" : "Select Department Position"}</option>
+                {positionOptions.map(pos => (
+                  <option key={pos} value={pos}>{pos}</option>
                 ))}
               </select>
             )}
@@ -278,7 +299,9 @@ const SuperAdminDashboard = () => {
 
           <div className="modal-buttons">
             <button onClick={() => onConfirm(newPosition)}>Update Position</button>
-            <button onClick={() => onConfirm(currentPosition)}>Keep Current Position</button>
+            {!isAdminOfficer && (
+              <button onClick={() => onConfirm(currentPosition)}>Keep Current Position</button>
+            )}
             <button onClick={onClose}>Cancel</button>
           </div>
         </div>
@@ -539,6 +562,13 @@ const SuperAdminDashboard = () => {
                                   <option key={dept} value={dept}>{dept}</option>
                                 ))}
                               </select>
+                            ) : (editedUsers[user.id]?.role === "AO Admin Officer" || 
+                                user.role === "AO Admin Officer") ? (
+                              // For Administrative Officers, show position if already set, or "Set position" prompt
+                              <div style={{ backgroundColor: "#f0f0f0", padding: "8px", borderRadius: "4px" }}>
+                                {(editedUsers[user.id]?.position || user.position) || 
+                                  "Click Role dropdown to set specific Admin Officer position"}
+                              </div>
                             ) : (
                               <input
                                 type="text"

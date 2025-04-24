@@ -23,8 +23,7 @@ const RequestForm = () => {
   // Department options for react-select: label, value
   const departmentOptions = [
     { label: "Accounting", value: "Accounting" },
-    { label: "Administrative", value: "Administrative" },
-    { label: "Administrator", value: "Administrator" },
+    { label: "Administrative Office", value: "Administrative Office" },
     { label: "Assessment and Evaluation", value: "Assessment and Evaluation" },
     { label: "Assistant Schools Division Superintendent (Cluster A)", value: "Assistant Schools Division Superintendent (Cluster A)" },
     { label: "Assistant Schools Division Superintendent (Cluster B)", value: "Assistant Schools Division Superintendent (Cluster B)" },
