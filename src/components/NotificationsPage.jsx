@@ -42,30 +42,56 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const handleDownloadPDF = async (e) => {
     e.stopPropagation(); // Prevent notification from expanding when clicking download
     try {
-      // Extract security code from notification message
-      // Extract security code from notification message
-      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
-      const securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
+      const token = localStorage.getItem('accessToken');
+      let travelRequest;
+      let securityCode;
       
-      if (!securityCode) {
-        showSnackbar('Could not find security code in notification', 'error');
-        return;
+      // Check if this is an expired notification
+      if (notification.type === 'TRAVEL_REQUEST_EXPIRED' || notification.type === 'TRAVEL_REQUEST_COMPLETED') {
+        // For expired notifications, we need to use the travelRequestId from metadata
+        try {
+          const metadata = notification.metadata ? JSON.parse(notification.metadata) : {};
+          if (metadata.travelRequestId) {
+            // Use the special endpoint for expired travel requests
+            const response = await axios.get(`http://localhost:3000/travel-requests/expired/${metadata.travelRequestId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            travelRequest = response.data;
+            securityCode = travelRequest.securityCode; // This will be the restored original security code
+          } else {
+            showSnackbar('Could not find travel request ID in notification metadata', 'error');
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing notification metadata:', error);
+          showSnackbar('Error parsing notification metadata', 'error');
+          return;
+        }
+      } else {
+        // For non-expired notifications, use the security code from the message
+        const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
+        securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
+        
+        if (!securityCode) {
+          showSnackbar('Could not find security code in notification', 'error');
+          return;
+        }
+        
+        // Fetch the travel request details using the security code
+        const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        travelRequest = response.data;
       }
       
-      // Fetch the travel request details using the security code
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const travelRequest = response.data;
       console.log('Travel request data for Authority to Travel:', travelRequest);
       
       // Generate the PDF
       const doc = generateTravelAuthorityPDF(travelRequest);
       
       // Save the PDF directly
-      doc.save(`Authority_to_Travel_${securityCode}.pdf`);
+      doc.save(`Authority_to_Travel_${securityCode || 'download'}.pdf`);
       showSnackbar('Authority to Travel PDF downloaded successfully', 'success');
     } catch (error) {
       console.error('Failed to generate PDF:', error);
@@ -76,32 +102,59 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
   const handleDownloadCertificateOfAppearancePDF = async (e) => {
     e.stopPropagation(); // Prevent notification from expanding when clicking download
     try {
-      // Extract security code from notification message
-      const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
-      const securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
+      const token = localStorage.getItem('accessToken');
+      let travelRequest;
+      let securityCode;
       
-      if (!securityCode) {
-        showSnackbar('Could not find security code in notification', 'error');
-        return;
+      // Check if this is an expired notification
+      if (notification.type === 'TRAVEL_REQUEST_EXPIRED' || notification.type === 'TRAVEL_REQUEST_COMPLETED') {
+        // For expired notifications, we need to use the travelRequestId from metadata
+        try {
+          const metadata = notification.metadata ? JSON.parse(notification.metadata) : {};
+          if (metadata.travelRequestId) {
+            // Use the special endpoint for expired travel requests
+            const response = await axios.get(`http://localhost:3000/travel-requests/expired/${metadata.travelRequestId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            travelRequest = response.data;
+            securityCode = travelRequest.securityCode; // This will be the restored original security code
+          } else {
+            showSnackbar('Could not find travel request ID in notification metadata', 'error');
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing notification metadata:', error);
+          showSnackbar('Error parsing notification metadata', 'error');
+          return;
+        }
+      } else {
+        // For non-expired notifications, use the security code from the message
+        const securityCodeMatch = notification.message.match(/Security Code: ([A-Z0-9]+)/);
+        securityCode = securityCodeMatch ? securityCodeMatch[1] : null;
+        
+        if (!securityCode) {
+          showSnackbar('Could not find security code in notification', 'error');
+          return;
+        }
+        
+        // Fetch the travel request details using the security code
+        const response = await axios.get(
+          `http://localhost:3000/travel-requests/by-code/${securityCode}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        
+        travelRequest = response.data;
       }
       
-      // Fetch the travel request details using the security code
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(
-        `http://localhost:3000/travel-requests/by-code/${securityCode}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      const travelRequest = response.data;
       console.log('Travel request data for Certificate of Appearance:', travelRequest);
       
       // Generate the certificate of appearance PDF
       const doc = generateDownloadReceiptPDF(travelRequest);
       
       // Save the PDF directly
-      doc.save(`Certificate_of_Appearance_${securityCode}.pdf`);
+      doc.save(`Certificate_of_Appearance_${securityCode || 'download'}.pdf`);
       showSnackbar('Certificate of Appearance PDF downloaded successfully', 'success');
     } catch (error) {
       console.error('Failed to generate certificate of appearance PDF:', error);
@@ -208,8 +261,8 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
               return 'CERTIFICATE OF APPEARANCE APPROVED';
             } else if (isAuthority) {
               return 'AUTHORITY TO TRAVEL APPROVED';
-            } else if (notification.type === 'TRAVEL_REQUEST_VALIDATED') {
-              return 'TRAVEL REQUEST VALIDATED';
+            } else if (notification.type === 'TRAVEL_REQUEST_VALIDATED' || notification.type === 'TRAVEL_REQUEST_EXPIRED') {
+              return notification.type === 'TRAVEL_REQUEST_EXPIRED' ? 'TRAVEL REQUEST EXPIRED' : 'TRAVEL REQUEST VALIDATED';
             }
             
             return notification.type.replace(/_/g, ' ');
@@ -236,6 +289,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           )}
           {/* Only show Certificate button alone for Certificate-specific notifications */}
           {(notification.type === 'CERTIFICATE_OF_APPEARANCE_APPROVED' || 
+             notification.type === 'TRAVEL_REQUEST_EXPIRED' ||
              (notification.type === 'TRAVEL_REQUEST_APPROVED' && 
               notification.message && 
               notification.message.includes('emergency purposes until your travel end date')) ||
@@ -244,9 +298,12 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
               <button className="download-pdf-button" onClick={handleDownloadCertificateOfAppearancePDF}>
                 Download Certificate of Appearance PDF
               </button>
+              <button className="download-pdf-button" onClick={handleDownloadPDF}>
+                Download Authority to Travel PDF
+              </button>
             </>
           )}
-          {/* No download buttons for TRAVEL_REQUEST_VALIDATED */}
+          {/* No download buttons for TRAVEL_REQUEST_VALIDATED or TRAVEL_REQUEST_EXPIRED */}
           {(notification.type === 'TRAVEL_REQUEST_RECEIPT' || 
              notification.type === 'TRAVEL_COMPLETED') && (
             <>
