@@ -1,15 +1,13 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { generateDownloadReceiptPDF } from "../utils/downloadReceiptGenerator";
+import { generateReceiptPDF, getStatusDisplayText } from "../utils/receiptGenerator";
+import { generateTravelAuthorityPDF } from "../utils/travelAuthorityGenerator";
+import Navbar from "./Navbar";
+import "./NotificationsPage.css";
 import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
-import axios from "axios"
-import { jsPDF } from 'jspdf'
-import Navbar from "./Navbar"
-import "./NotificationsPage.css"
-import { generateReceiptPDF, getStatusDisplayText } from "../utils/receiptGenerator"
-import { generateTravelAuthorityPDF } from "../utils/travelAuthorityGenerator"
-import { generateDownloadReceiptPDF } from "../utils/downloadReceiptGenerator"
-import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppearanceGenerator'
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
   // Add useSnackbar hook to access the showSnackbar function

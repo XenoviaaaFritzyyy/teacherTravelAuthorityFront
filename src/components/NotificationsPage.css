@@ -117,6 +117,11 @@
     transition: background-color 0.3s;
   }
   
+  /* Add spacing between adjacent download buttons */
+  .download-pdf-button + .download-pdf-button {
+    margin-left: 15px;
+  }
+  
   .download-pdf-button:hover {
     background-color: #388e3c;
   }

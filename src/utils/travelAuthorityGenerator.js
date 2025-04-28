@@ -31,13 +31,13 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
 
   // Add title
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text('AUTHORITY TO TRAVEL', doc.internal.pageSize.width / 2, y, { align: 'center' });
 
   // Add recipient information
   y += 12; // Reduced from 15 to save space
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
 
   // Set up measurements
   const labelX = 20;
@@ -434,9 +434,9 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   
   // Always display the approver name (even if empty) to ensure consistent positioning
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text(approverName, doc.internal.pageSize.width - 40, y - 2, { align: 'center' }); // Moved closer to the line (y-2 instead of y-5)
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   
   // Draw the signature line
   doc.line(doc.internal.pageSize.width - 60, y, doc.internal.pageSize.width - 20, y);
@@ -478,9 +478,9 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   
   // Always display the position title (even if empty) to ensure consistent positioning
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text(positionTitle, doc.internal.pageSize.width - 40, y - 2, { align: 'center' }); // Moved closer to the line (y-2 instead of y-5)
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   
   // Draw the position title line
   doc.line(doc.internal.pageSize.width - 60, y, doc.internal.pageSize.width - 20, y);
@@ -493,7 +493,7 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   // Add disclaimer notes at the bottom of the page - reduced spacing
   y += 15; // Reduced from 20
   doc.setFontSize(6.5); // Reduced from 7
-  doc.setFont('helvetica', 'italic');
+  doc.setFont('bookman', 'italic');
   doc.text('* The issuing authority must verify the exigency of the travel and the form properly accomplished before affixing her/his signature.', 15, y);
   
   y += 4; // Reduced from 5
@@ -514,7 +514,7 @@ export const generateTravelAuthorityPDF = (travelRequest) => {
   // Add footer with contact information - more compact layout
   y += 8; // Reduced from 10
   doc.setFontSize(7); // Reduced from 8
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   
   // Add Footer.png image at the bottom center, moved up to avoid cutting when printed
   try {
