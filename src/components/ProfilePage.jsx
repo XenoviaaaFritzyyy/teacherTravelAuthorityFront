@@ -278,7 +278,7 @@ const ProfilePage = () => {
               </div>
               <div className="confirmation-content">
                 <p className="confirmation-warning">
-                  Please verify that all information is correct. Professional information cannot be changed after confirmation.
+                  Please verify that all information is correct. Professional information CANNOT BE changed after confirmation.
                 </p>
                 
                 <div className="confirmation-section">
@@ -372,7 +372,7 @@ const ProfilePage = () => {
           {/* Professional Information */}
           <div className="info-card">
             <div className="admin-note">
-              <p>To update professional information, please contact the administrator.</p>
+              <p>Note: To update professional information, please contact the administrator.</p>
             </div>
             <div className="form-group">
               <input
