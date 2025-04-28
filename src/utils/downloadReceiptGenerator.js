@@ -37,13 +37,13 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   // Add title
   y += 10;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text('CERTIFICATE OF APPEARANCE', doc.internal.pageSize.width / 2, y, { align: 'center' });
   
   // Add certification text
   y += 15;
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   doc.text('This is to certify that the person named hereunder had appeared before this Office, with', doc.internal.pageSize.width / 2, y, { align: 'center' });
   y += 5;
   doc.text('details as follows:', doc.internal.pageSize.width / 2, y, { align: 'center' });
@@ -53,20 +53,20 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   doc.setFontSize(11);
   
   // Name field
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text('Name', 35, y);
   doc.text(':', 68, y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   const fullName = `${travelRequest.user?.first_name || ''} ${travelRequest.user?.last_name || ''}`.trim();
   doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
   doc.text(fullName, (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   
   // Date field
   y += 20;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text('Date', 35, y);
   doc.text(':', 68, y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
 
   // Fetch and format travel date range (start to end)
   let dateText = '';
@@ -86,10 +86,10 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   
   // Purpose field
   y += 20;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('bookman', 'bold');
   doc.text('Purpose', 35, y);
   doc.text(':', 68, y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   doc.line(75, y + 1, doc.internal.pageSize.width - 35, y + 1);
   doc.text(travelRequest.purpose || '', (75 + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   
@@ -220,7 +220,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   // Add signature text below the line
   y += 7;
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('bookman', 'normal');
   doc.text(approverName || ' ', (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
   y += 7;
   doc.text(approverPosition, (signX + (doc.internal.pageSize.width - 35)) / 2, y, { align: 'center' });
@@ -228,7 +228,7 @@ export const generateDownloadReceiptPDF = (travelRequest) => {
   // Add note about validity - left aligned, below signature
   y += 10;
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'italic');
+  doc.setFont('bookman', 'italic');
   doc.text('Note: This is electronically generated. Not valid with erasures, superimpositions or alterations.', 35, y);
   
   // Add much more space before the footer line to prevent overlap
