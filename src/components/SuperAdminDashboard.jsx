@@ -51,7 +51,7 @@ const departments = [
 
 // List of all districts
 const districtOptions = [
-  "Alcantara","Alcoy","Alegria","Aloguinsan","Argao I","Argao II","Asturias I",
+  "Division","Alcantara","Alcoy","Alegria","Aloguinsan","Argao I","Argao II","Asturias I",
   "Asturias II","Badian","Balamban I","Balamban II","Bantayan I","Bantayan II","Barili I",
   "Barili II","Boljoon","Borbon","Carmen","Catmon","Compostela","Consolacion I","Consolacion II",
   "Cordova","Dalaguete I","Dalaguete II","Daanbantayan I","Daanbantayan II","Dumanjug I","Dumanjug II",

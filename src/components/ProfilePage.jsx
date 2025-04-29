@@ -8,6 +8,7 @@ import "./ProfilePage.css"
 import apiConfig from '../config/api'
 
 const districtOptions = [
+  "Division",
   "Alcantara",
   "Alcoy",
   "Alegria",

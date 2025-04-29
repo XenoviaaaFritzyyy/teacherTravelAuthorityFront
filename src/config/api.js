@@ -1,5 +1,5 @@
 // API configuration file
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default {
   baseURL: API_URL,
@@ -7,6 +7,7 @@ export default {
     auth: {
       login: `${API_URL}/auth/signin`,
       signup: `${API_URL}/auth/signup`,
+      checkEmail: `${API_URL}/auth/check-email`,
     },
     users: {
       me: `${API_URL}/users/me`,
