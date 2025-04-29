@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Navigate, useLocation } from "react-router-dom"
 import { useUser } from "../context/UserContext"
+import apiConfig from '../config/api'
 
 const ProtectedRoute = ({ children }) => {
   const { user, updateUser } = useUser()
@@ -21,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
           return
         }
 
-        const response = await fetch('http://localhost:3000/users/me', {
+        const response = await fetch(apiConfig.endpoints.users.me, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import "./Navbar.css"
+import apiConfig from '../config/api'
 
 const Navbar = () => {
   const navigate = useNavigate()
@@ -18,7 +19,7 @@ const Navbar = () => {
     const fetchUnreadNotifications = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:3000/notifications', {
+        const response = await axios.get(apiConfig.endpoints.notifications.base, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const unread = response.data.notifications.filter(n => !n.isRead).length;

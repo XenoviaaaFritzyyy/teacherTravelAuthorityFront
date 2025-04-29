@@ -3,6 +3,7 @@ import axios from "axios";
 import { useUser } from "../context/UserContext";
 import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
 import "./PendingRequestsTable.css";
+import apiConfig from '../config/api';
 
 const PendingRequestsTable = ({ onUnviewedCountChange }) => {
   const { user } = useUser();
@@ -41,7 +42,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
         setError(null);
         
         const response = await axios.get(
-          "http://localhost:3000/travel-requests/pending",
+          `${apiConfig.endpoints.travelRequests.pending}`,
           getAuthHeaders()
         );
         
@@ -106,7 +107,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
     if (expandedId !== id) {
       try {
         await axios.patch(
-          `http://localhost:3000/travel-requests/${id}/viewed`,
+          `${apiConfig.endpoints.travelRequests.base}/${id}/viewed`,
           {},
           getAuthHeaders()
         );
@@ -160,7 +161,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
 
     try {
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/remarks`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/remarks`,
         { remarks: appendedRemarks },
         getAuthHeaders()
       );
@@ -193,7 +194,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
     try {
       // Only update status to accepted
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/status`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/status`,
         { status: "accepted" },
         getAuthHeaders()
       );
@@ -201,7 +202,7 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
       // Then add remark if provided
       if (remarkText.trim()) {
         await axios.patch(
-          `http://localhost:3000/travel-requests/${id}/remarks`,
+          `${apiConfig.endpoints.travelRequests.base}/${id}/remarks`,
           { remarks: appendedRemarks },
           getAuthHeaders()
         );
@@ -250,14 +251,14 @@ const PendingRequestsTable = ({ onUnviewedCountChange }) => {
     try {
       // First add the rejection remark
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/remarks`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/remarks`,
         { remarks: appendedRemarks },
         getAuthHeaders()
       );
 
       // Then reject the request
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/validate`,
         { validationStatus: "REJECTED" },
         getAuthHeaders()
       );

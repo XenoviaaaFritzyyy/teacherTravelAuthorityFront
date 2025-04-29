@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import Navbar from "./Navbar"
 import "./ProfilePage.css"
+import apiConfig from '../config/api'
 
 const districtOptions = [
   "Alcantara",
@@ -112,7 +113,7 @@ const ProfilePage = () => {
           return
         }
 
-        const response = await fetch('http://localhost:3000/users/me', {
+        const response = await fetch(apiConfig.endpoints.users.me, {
           headers: {
             'Authorization': `Bearer ${token}`,  // Fixed template literal
             'Content-Type': 'application/json'
@@ -233,7 +234,7 @@ const ProfilePage = () => {
                 ...professionalInfo,
             }
 
-            const response = await fetch(`http://localhost:3000/users/${user.id}`, {
+            const response = await fetch(`${apiConfig.endpoints.users.base}/${user.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

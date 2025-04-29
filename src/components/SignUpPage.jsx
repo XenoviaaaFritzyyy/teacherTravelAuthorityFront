@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./SignUpPage.css";
+import apiConfig from '../config/api';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ const SignUpPage = () => {
     if (validateForm()) {
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:3000/auth/signup', {
+            const response = await fetch(apiConfig.endpoints.auth.signup, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

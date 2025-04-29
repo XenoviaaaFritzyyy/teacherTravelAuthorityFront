@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { useSnackbar } from './SnackbarProvider'; // Correct import
 import "./SuperAdminDashboard.css"
 import { Bell, Home, RefreshCw, Users } from "lucide-react";
+import apiConfig from '../config/api';
 
 // Replacing the original departments array with the one from AOadminDashboard
 const departments = [
@@ -101,11 +102,11 @@ const SuperAdminDashboard = () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         // Add this to fetch current user
-        const userRes = await axios.get("http://localhost:3000/users/me", { headers });
+        const userRes = await axios.get(apiConfig.endpoints.users.me, { headers });
         setCurrentUser(userRes.data);
 
         // Fetch users with complete data
-        const usersRes = await axios.get("http://localhost:3000/users", { headers });
+        const usersRes = await axios.get(apiConfig.endpoints.users.base, { headers });
         console.log('Fetched users:', usersRes.data); // Debugging
         
         // Transform the user data if needed
@@ -128,7 +129,7 @@ const SuperAdminDashboard = () => {
     const fetchTravelOrders = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:3000/travel-requests", {
+        const res = await axios.get(apiConfig.endpoints.travelRequests.base, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -213,14 +214,14 @@ const SuperAdminDashboard = () => {
       // Update each edited user
       for (const [userId, updates] of Object.entries(editedUsers)) {
         await axios.put(
-          `http://localhost:3000/users/${userId}`,
+          `${apiConfig.endpoints.users.base}/${userId}`,
           updates,
           { headers }
         );
       }
 
       // Refresh users list
-      const response = await axios.get("http://localhost:3000/users", { headers });
+      const response = await axios.get(apiConfig.endpoints.users.base, { headers });
       setUsers(response.data);
       
       setEditedUsers({});
@@ -256,7 +257,7 @@ const SuperAdminDashboard = () => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.post(
-        `http://localhost:3000/users/${userId}/reset-password`,
+        apiConfig.endpoints.users.resetPassword(userId),
         {},
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
@@ -377,13 +378,13 @@ const SuperAdminDashboard = () => {
       setIsCheckingExpiredCodes(true);
       const token = localStorage.getItem('accessToken');
       const response = await axios.post(
-        "http://localhost:3000/travel-requests/check-expired-codes",
+        apiConfig.endpoints.travelRequests.checkExpiredCodes,
         {},
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
       
       // Refresh travel orders
-      const res = await axios.get("http://localhost:3000/travel-requests", {
+      const res = await axios.get(apiConfig.endpoints.travelRequests.base, {
         headers: { Authorization: `Bearer ${token}` },
       });
       

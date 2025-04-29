@@ -9,6 +9,7 @@ import "./AOadminOfficerDashboard.css";
 import jsPDF from 'jspdf';
 import { formatDate, generateReceiptPDF, getStatusBadgeClass, getStatusDisplayText } from "../utils/receiptGenerator";
 import { generateCertificateOfAppearancePDF } from '../utils/certificateOfAppearanceGenerator';
+import apiConfig from '../config/api';
 
 const departments = [
   "Accounting",
@@ -101,7 +102,7 @@ const AOadminOfficerDashboard = () => {
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:3000/users/me", {
+        const res = await axios.get(apiConfig.endpoints.users.me, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUser(res.data);
@@ -116,7 +117,7 @@ const AOadminOfficerDashboard = () => {
     const fetchTravelOrders = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:3000/travel-requests", {
+        const res = await axios.get(apiConfig.endpoints.travelRequests.base, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Travel requests data:", res.data);
@@ -442,7 +443,7 @@ const AOadminOfficerDashboard = () => {
       const payload = { remarks: updatedRemarks };
 
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/remarks`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/remarks`,
         payload,
         getAuthHeaders()
       );
@@ -562,7 +563,7 @@ const AOadminOfficerDashboard = () => {
         : aoRemark;
 
       const response = await axios.patch(
-        `http://localhost:3000/travel-requests/${confirmOrderData.id}/validate`,
+        `${apiConfig.endpoints.travelRequests.base}/${confirmOrderData.id}/validate`,
         { 
           validationStatus: 'VALIDATED',
           remarks: updatedRemarks,
@@ -587,7 +588,7 @@ const AOadminOfficerDashboard = () => {
         // Send notification to the user
         if (confirmOrderData.user && confirmOrderData.user.id) {
           await axios.post(
-            `http://localhost:3000/travel-requests/${confirmOrderData.id}/receipt`,
+            `${apiConfig.endpoints.travelRequests.base}/${confirmOrderData.id}/receipt`,
             {
               message: `Your Certificate of Appearance has been approved by ${currentUser?.first_name} ${currentUser?.last_name} (${currentUser?.position || 'Administrative Officer'}). Security Code: ${confirmOrderData.securityCode}`,
               type: 'CERTIFICATE_OF_APPEARANCE_APPROVED'
@@ -624,7 +625,7 @@ const AOadminOfficerDashboard = () => {
 
       // Reject the request
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/validate`,
         { 
           validationStatus: "REJECTED",
           remarks: updatedRemarks
@@ -648,7 +649,7 @@ const AOadminOfficerDashboard = () => {
       // Send notification to user about rejection
       if (order.user && order.user.id) {
         await axios.post(
-          `http://localhost:3000/notifications`,
+          apiConfig.endpoints.notifications.base,
           {
             userId: order.user.id,
             message: `Your travel request has been rejected${remarkText.trim() ? `. Reason: ${remarkText.trim()}` : '.'}`,
@@ -679,7 +680,7 @@ const AOadminOfficerDashboard = () => {
       // Send notification to user about receipt
       if (order.user && order.user.id) {
         await axios.post(
-          `http://localhost:3000/travel-requests/${order.id}/receipt`,
+          `${apiConfig.endpoints.travelRequests.base}/${order.id}/receipt`,
           {
             message: `Your travel request receipt is ready. Security Code: ${order.securityCode}`
           },
@@ -771,13 +772,13 @@ const AOadminOfficerDashboard = () => {
       setIsCheckingExpiredCodes(true);
       const token = localStorage.getItem('accessToken');
       const response = await axios.post(
-        "http://localhost:3000/travel-requests/check-expired-codes",
+        apiConfig.endpoints.travelRequests.checkExpiredCodes,
         {},
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
       
       // Refresh travel orders after updating expired codes
-      const res = await axios.get("http://localhost:3000/travel-requests", {
+      const res = await axios.get(apiConfig.endpoints.travelRequests.base, {
         headers: { Authorization: `Bearer ${token}` },
       });
       

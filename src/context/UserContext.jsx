@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useState, useContext, useEffect } from "react"
+import apiConfig from '../config/api'
 
 // Create context
 const UserContext = createContext()
@@ -24,7 +25,7 @@ export const UserProvider = ({ children }) => {
       }
 
       try {
-        const response = await fetch('http://localhost:3000/users/me', {
+        const response = await fetch(apiConfig.endpoints.users.me, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -80,7 +81,7 @@ export const UserProvider = ({ children }) => {
     if (!token || !user?.id) return false
 
     try {
-      const response = await fetch(`http://localhost:3000/users/${user.id}`, {
+      const response = await fetch(`${apiConfig.endpoints.users.base}/${user.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -98,7 +99,7 @@ export const UserProvider = ({ children }) => {
 
       // If update fails, try to fetch current user data
       if (response.status === 500) {
-        const userResponse = await fetch('http://localhost:3000/users/me', {
+        const userResponse = await fetch(apiConfig.endpoints.users.me, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

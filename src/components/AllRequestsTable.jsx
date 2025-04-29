@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import "./AllRequestsTable.css";
+import apiConfig from '../config/api';
 
 const AllRequestsTable = () => {
   const [requests, setRequests] = useState([]);
@@ -17,7 +18,7 @@ const AllRequestsTable = () => {
         
         // Use existing endpoint to get all requests
         const response = await axios.get(
-          "http://localhost:3000/travel-requests",
+          apiConfig.endpoints.travelRequests.base,
           {
             headers: {
               Authorization: `Bearer ${token}`,

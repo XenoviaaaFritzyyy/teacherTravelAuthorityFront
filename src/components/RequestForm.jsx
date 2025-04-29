@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Select from "react-select"         // <-- Import from react-select
 import "./RequestForm.css"
+import apiConfig from '../config/api'
 
 const RequestForm = () => {
   // Department stored as an array of selected values (strings).
@@ -175,7 +176,7 @@ const RequestForm = () => {
           endDate: new Date(formData.endDate).toISOString().split("T")[0],
         }
 
-        const response = await fetch("http://localhost:3000/travel-requests", {
+        const response = await fetch(apiConfig.endpoints.travelRequests.base, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

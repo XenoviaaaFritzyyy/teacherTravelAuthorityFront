@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
 import "./AOadminDashboard.css";
+import apiConfig from '../config/api';
 
 const departments = [
   "Accounting",
@@ -72,7 +73,7 @@ const AdminDashboard = () => {
     const fetchCurrentUser = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:3000/users/me", {
+        const res = await axios.get(apiConfig.endpoints.users.me, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUser(res.data);
@@ -87,7 +88,7 @@ const AdminDashboard = () => {
     const fetchNotifications = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const response = await axios.get('http://localhost:3000/notifications', {
+        const response = await axios.get(apiConfig.endpoints.notifications.base, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const unread = response.data.notifications.filter(n => !n.isRead).length;
@@ -101,7 +102,7 @@ const AdminDashboard = () => {
     const fetchTravelOrders = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get("http://localhost:3000/travel-requests", {
+        const res = await axios.get(apiConfig.endpoints.travelRequests.base, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("Travel requests data:", res.data);
@@ -154,13 +155,13 @@ const AdminDashboard = () => {
       setIsCheckingExpiredCodes(true);
       const token = localStorage.getItem('accessToken');
       const response = await axios.post(
-        "http://localhost:3000/travel-requests/check-expired-codes",
+        apiConfig.endpoints.travelRequests.checkExpiredCodes,
         {},
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
       
       // Refresh travel orders after updating expired codes
-      const res = await axios.get("http://localhost:3000/travel-requests", {
+      const res = await axios.get(apiConfig.endpoints.travelRequests.base, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -259,7 +260,7 @@ const AdminDashboard = () => {
 
     try {
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/remarks`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/remarks`,
         { remarks: updatedRemarks },
         getAuthHeaders()
       );
@@ -352,7 +353,7 @@ const AdminDashboard = () => {
       const updatedRemarks = combineRemarks(order.remarks, newRemark);
 
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/status`,
         {
           remarks: updatedRemarks,
           validationStatus: "REJECTED"
@@ -400,7 +401,7 @@ const AdminDashboard = () => {
 
       // Validate the request
       await axios.patch(
-        `http://localhost:3000/travel-requests/${id}/validate`,
+        `${apiConfig.endpoints.travelRequests.base}/${id}/validate`,
         { 
           validationStatus: "VALIDATED",
           remarks: updatedRemarks
@@ -424,7 +425,7 @@ const AdminDashboard = () => {
       // Send notification to user about validation
       if (order.user && order.user.id) {
         await axios.post(
-          `http://localhost:3000/notifications`,
+          apiConfig.endpoints.notifications.base,
           {
             userId: order.user.id,
             message: `Your travel request has been validated by ${currentUser?.first_name} ${currentUser?.last_name}.`,

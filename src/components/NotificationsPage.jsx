@@ -8,6 +8,7 @@ import { generateTravelAuthorityPDF } from "../utils/travelAuthorityGenerator";
 import Navbar from "./Navbar";
 import "./NotificationsPage.css";
 import { useSnackbar } from "./SnackbarProvider"; // Use unified snackbar provider
+import apiConfig from '../config/api'
 
 const NotificationItem = ({ notification, isExpanded, onClick }) => {
   // Add useSnackbar hook to access the showSnackbar function
@@ -51,7 +52,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           const metadata = notification.metadata ? JSON.parse(notification.metadata) : {};
           if (metadata.travelRequestId) {
             // Use the special endpoint for expired travel requests
-            const response = await axios.get(`http://localhost:3000/travel-requests/expired/${metadata.travelRequestId}`, {
+            const response = await axios.get(`${apiConfig.endpoints.travelRequests.base}/expired/${metadata.travelRequestId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             travelRequest = response.data;
@@ -76,7 +77,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
         }
         
         // Fetch the travel request details using the security code
-        const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+        const response = await axios.get(`${apiConfig.endpoints.travelRequests.base}/by-code/${securityCode}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -111,7 +112,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
           const metadata = notification.metadata ? JSON.parse(notification.metadata) : {};
           if (metadata.travelRequestId) {
             // Use the special endpoint for expired travel requests
-            const response = await axios.get(`http://localhost:3000/travel-requests/expired/${metadata.travelRequestId}`, {
+            const response = await axios.get(`${apiConfig.endpoints.travelRequests.base}/expired/${metadata.travelRequestId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             travelRequest = response.data;
@@ -137,7 +138,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
         
         // Fetch the travel request details using the security code
         const response = await axios.get(
-          `http://localhost:3000/travel-requests/by-code/${securityCode}`,
+          `${apiConfig.endpoints.travelRequests.base}/by-code/${securityCode}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -174,7 +175,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
       
       // Fetch the travel request details using the security code
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+      const response = await axios.get(`${apiConfig.endpoints.travelRequests.base}/by-code/${securityCode}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -207,7 +208,7 @@ const NotificationItem = ({ notification, isExpanded, onClick }) => {
       
       // Fetch the travel request details using the security code
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:3000/travel-requests/by-code/${securityCode}`, {
+      const response = await axios.get(`${apiConfig.endpoints.travelRequests.base}/by-code/${securityCode}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -332,7 +333,7 @@ const NotificationsPage = () => {
   const fetchNotifications = async (pageNum = 1, append = false) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get('http://localhost:3000/notifications', {
+      const response = await axios.get(`${apiConfig.endpoints.notifications.base}`, {
         params: {
           page: pageNum,
           limit: 10,
@@ -433,7 +434,7 @@ const NotificationsPage = () => {
     if (expandedId !== id) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.patch(`http://localhost:3000/notifications/${id}/read`, {}, {
+        await axios.patch(`${apiConfig.endpoints.notifications.base}/${id}/read`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         

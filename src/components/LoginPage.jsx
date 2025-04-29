@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import ChangePasswordModal from "./ChangePasswordModal"
 import "./LoginPage.css"
+import apiConfig from '../config/api'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -49,7 +50,7 @@ const LoginPage = () => {
   const handlePasswordChange = async (newPassword) => {
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3000/users/change-password', {
+      const response = await fetch(`${apiConfig.endpoints.users.base}/change-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -104,7 +105,7 @@ const LoginPage = () => {
     if (validateForm()) {
       setIsLoading(true)
       try {
-        const response = await fetch('http://localhost:3000/auth/signin', {
+        const response = await fetch(apiConfig.endpoints.auth.login, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -120,7 +121,7 @@ const LoginPage = () => {
           localStorage.setItem('accessToken', data.accessToken)
           
           try {
-            const userResponse = await fetch('http://localhost:3000/users/me', {
+            const userResponse = await fetch(apiConfig.endpoints.users.me, {
               headers: {
                 'Authorization': `Bearer ${data.accessToken}`,
                 'Content-Type': 'application/json'

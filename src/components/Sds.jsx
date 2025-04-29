@@ -9,6 +9,7 @@ import Navbar from "./Navbar"
 import PendingRequestsTable from "./PendingRequestsTable"
 import RequestSummary from "./RequestSummary"
 import AllRequestsTable from "./AllRequestsTable"
+import apiConfig from '../config/api'
 
 const Sds = () => {
     const location = useLocation()
@@ -43,7 +44,7 @@ const Sds = () => {
             try {
                 const token = localStorage.getItem("accessToken");
                 const response = await axios.get(
-                    "http://localhost:3000/travel-requests/pending",
+                    apiConfig.endpoints.travelRequests.pending,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
