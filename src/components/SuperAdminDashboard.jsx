@@ -62,10 +62,6 @@ const districtOptions = [
 
 // List of Administrative Officer positions
 const adminOfficerPositions = [
-  "Administrative Officer I",
-  "Administrative Officer II",
-  "Administrative Officer III",
-  "Administrative Officer IV",
   "Administrative Officer V",
   "Senior Administrative Officer",
   "Chief Administrative Officer",
@@ -76,7 +72,6 @@ const SuperAdminDashboard = () => {
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  // District editing state
   const [editingDistrictUserId, setEditingDistrictUserId] = useState(null);
   const [editingDistrictValue, setEditingDistrictValue] = useState("");
   const [editedUsers, setEditedUsers] = useState({});
@@ -84,7 +79,7 @@ const SuperAdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPositionModal, setShowPositionModal] = useState(false);
   const [userToUpdate, setUserToUpdate] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null)
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeView, setActiveView] = useState("users");
   const [travelOrders, setTravelOrders] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -93,6 +88,7 @@ const SuperAdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [isCheckingExpiredCodes, setIsCheckingExpiredCodes] = useState(false);
+  const [originalPositions, setOriginalPositions] = useState({});
 
   // Fetch users
   useEffect(() => {
@@ -170,13 +166,12 @@ const SuperAdminDashboard = () => {
   const handleUserChange = (id, field, value) => {
     // If changing role to AO Admin Officer (Administrative Officer)
     if (field === "role" && value === "AO Admin Officer") {
-      // Instead of automatically setting position, show the modal with admin officer positions
       const user = users.find(u => u.id === id);
       setUserToUpdate({
         id,
         currentPosition: user?.position || '',
         newRole: value,
-        isAdminOfficer: true // Flag to indicate this is for admin officer selection
+        isAdminOfficer: true
       });
       setShowPositionModal(true);
       return;
@@ -185,11 +180,20 @@ const SuperAdminDashboard = () => {
     // If role is AO Admin (Department Officer), show department position modal
     if (field === "role" && value === "AO Admin") {
       const user = users.find(u => u.id === id);
+      // Store the original position in the database
+      setEditedUsers(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          original_position: user?.position || '', // Store original position
+          role: value
+        }
+      }));
       setUserToUpdate({
         id,
         currentPosition: user?.position || '',
         newRole: value,
-        isAdminOfficer: false // Flag to indicate this is for department selection
+        isAdminOfficer: false
       });
       setShowPositionModal(true);
       return;
@@ -213,6 +217,13 @@ const SuperAdminDashboard = () => {
 
       // Update each edited user
       for (const [userId, updates] of Object.entries(editedUsers)) {
+        // If this is a department officer, keep both department and original position
+        if (updates.role === "AO Admin" && updates.position) {
+          // Keep both the department and original position
+          updates.position = updates.position;
+          // original_position is already set in handleUserChange
+        }
+        
         await axios.put(
           `${apiConfig.endpoints.users.base}/${userId}`,
           updates,
@@ -270,12 +281,11 @@ const SuperAdminDashboard = () => {
 
   // Add position change modal component
   const PositionChangeModal = ({ show, onClose, onConfirm, currentPosition }) => {
-    const [newPosition, setNewPosition] = useState(currentPosition);
+    const [newPosition, setNewPosition] = useState(currentPosition || (userToUpdate?.isAdminOfficer ? "Administrative Officer V" : ""));
     const [useCustomPosition, setUseCustomPosition] = useState(false);
 
     if (!show) return null;
 
-    // Determine if we're selecting an Administrative Officer position
     const isAdminOfficer = userToUpdate?.isAdminOfficer || false;
     const title = isAdminOfficer ? "Select Administrative Officer Position" : "Update Position";
     const positionOptions = isAdminOfficer ? adminOfficerPositions : departments;
@@ -312,19 +322,29 @@ const SuperAdminDashboard = () => {
               <select
                 value={newPosition}
                 onChange={(e) => setNewPosition(e.target.value)}
+                style={{ width: "100%" }}
               >
                 <option value="">{isAdminOfficer ? "Select Officer Position" : "Select Department Position"}</option>
                 {positionOptions.map(pos => (
-                  <option key={pos} value={pos}>{pos}</option>
+                  <option 
+                    key={pos} 
+                    value={pos}
+                    style={pos === "Administrative Officer V" && isAdminOfficer ? {
+                      backgroundColor: "#e0f7fa",
+                      fontWeight: "bold"
+                    } : {}}
+                  >
+                    {pos}
+                  </option>
                 ))}
               </select>
             )}
           </div>
 
           <div className="modal-buttons">
-            <button onClick={() => onConfirm(newPosition)}>Update Position</button>
+            <button onClick={() => onConfirm(newPosition)}>Update</button>
             {!isAdminOfficer && (
-              <button onClick={() => onConfirm(currentPosition)}>Keep Current Position</button>
+              <button onClick={() => onConfirm(currentPosition)}>Keep Current</button>
             )}
             <button onClick={onClose}>Cancel</button>
           </div>
@@ -569,18 +589,31 @@ const SuperAdminDashboard = () => {
                         <td>
                           {(editedUsers[user.id]?.role === "AO Admin" || 
                             user.role === "AO Admin") ? (
-                              <select
-                                value={editedUsers[user.id]?.position || user.position}
-                                onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
-                              >
-                                <option value="">Select Department Position</option>
-                                {departments.map(dept => (
-                                  <option key={dept} value={dept}>{dept}</option>
-                                ))}
-                              </select>
+                              <div>
+                                <select
+                                  value={editedUsers[user.id]?.position || user.position}
+                                  onChange={(e) => handleUserChange(user.id, "position", e.target.value)}
+                                >
+                                  <option value="">Select Department Position</option>
+                                  {departments.map(dept => (
+                                    <option key={dept} value={dept}>{dept}</option>
+                                  ))}
+                                </select>
+                                <div style={{ marginTop: "8px" }}>
+                                  <label style={{ fontSize: "12px", color: "#666", display: "block", marginBottom: "4px" }}>
+                                    Plantilla Position:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editedUsers[user.id]?.original_position || user.original_position || ""}
+                                    onChange={(e) => handleUserChange(user.id, "original_position", e.target.value)}
+                                    style={{ width: "100%", padding: "4px 8px", fontSize: "12px" }}
+                                    placeholder="Enter plantilla position"
+                                  />
+                                </div>
+                              </div>
                             ) : (editedUsers[user.id]?.role === "AO Admin Officer" || 
                                 user.role === "AO Admin Officer") ? (
-                              // For Administrative Officers, show position if already set, or "Set position" prompt
                               <div style={{ backgroundColor: "#f0f0f0", padding: "8px", borderRadius: "4px" }}>
                                 {(editedUsers[user.id]?.position || user.position) || 
                                   "Click Role dropdown to set specific Admin Officer position"}
@@ -664,7 +697,7 @@ const SuperAdminDashboard = () => {
                   id="search"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  placeholder="Search by name or ID"
+                  placeholder="Search by name"
                 />
               </div>
               <div className="filter-container">

@@ -814,3 +814,13 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  .position-selection select option[value="Administrative Officer V"] {
+    background-color: #e0f7fa;
+    font-weight: bold;
+  }
+
+  .position-selection select option[value="Administrative Officer V"]::after {
+    content: " (Default)";
+    color: #666;
+  }
