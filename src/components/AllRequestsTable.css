@@ -41,6 +41,7 @@
 
 .requests-table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .requests-table {
@@ -147,4 +148,44 @@
   .role-filter select {
     width: 100%;
   }
-} 
+  
+  .requests-table th,
+  .requests-table td {
+    padding: 0.6rem;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .all-requests-container {
+    padding: 1rem;
+  }
+  
+  .requests-table th,
+  .requests-table td {
+    padding: 0.5rem;
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    padding: 0.2rem 0.4rem;
+    font-size: 10px;
+  }
+  
+  /* Hide less important columns on mobile */
+  .requests-table .hide-on-mobile {
+    display: none;
+  }
+  
+  .search-box input {
+    padding: 0.6rem;
+    font-size: 13px;
+  }
+  
+  .status-filter select,
+  .role-filter select {
+    padding: 0.6rem;
+    font-size: 13px;
+    min-width: 100px;
+  }
+}

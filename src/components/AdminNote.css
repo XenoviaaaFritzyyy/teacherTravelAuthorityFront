@@ -1,0 +1,39 @@
+.admin-note-wrapper {
+  width: 100%;
+  margin-bottom: 20px;
+  position: relative;
+  display: block;
+}
+
+.admin-note-content {
+  background-color: #e7f3fe;
+  border-left: 4px solid #ff0000;
+  padding: 12px 15px;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-note-content p {
+  margin: 0;
+  color: #ff0000;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Ensure the note stays in place on all screen sizes */
+@media (max-width: 768px) {
+  .admin-note-wrapper {
+    margin-bottom: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-note-content {
+    padding: 10px;
+  }
+  
+  .admin-note-content p {
+    font-size: 12px;
+  }
+}

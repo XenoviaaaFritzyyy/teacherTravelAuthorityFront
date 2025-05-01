@@ -42,6 +42,20 @@
     margin-left: 126px;
   }
   
+  @media (max-width: 768px) {
+    .login-title {
+      margin-left: 0;
+      text-align: center;
+      font-size: 24px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .login-title {
+      font-size: 22px;
+    }
+  }
+  
   .login-form {
     display: flex;
     flex-direction: column;
@@ -111,6 +125,7 @@
     .login-container {
       flex-direction: column;
       padding: 20px;
+      max-width: 500px;
     }
   
     .logo-section {
@@ -121,6 +136,34 @@
       width: 150px;
       height: 150px;
     }
+    
+    .login-form-section {
+      width: 100%;
+    }
   }
   
-  
+  @media (max-width: 480px) {
+    .login-page {
+      padding: 10px;
+    }
+    
+    .login-container {
+      padding: 15px;
+      border-radius: 8px;
+    }
+    
+    .doe-logo {
+      width: 120px;
+      height: 120px;
+    }
+    
+    .form-group input {
+      padding: 10px;
+      font-size: 14px;
+    }
+    
+    .login-button {
+      padding: 10px;
+      font-size: 14px;
+    }
+  }

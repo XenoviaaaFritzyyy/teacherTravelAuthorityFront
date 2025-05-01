@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"  // Added useCallback
 import { useNavigate, useLocation } from "react-router-dom"
 import { useUser } from "../context/UserContext"
 import Navbar from "./Navbar"
+import AdminNote from "./AdminNote"
 import "./ProfilePage.css"
 import apiConfig from '../config/api'
 
@@ -373,9 +374,7 @@ const ProfilePage = () => {
 
           {/* Professional Information */}
           <div className="info-card">
-            <div className="admin-note">
-              <p>Note: To update professional information, please contact the administrator.</p>
-            </div>
+            <AdminNote message="Note: To update professional information, please contact the administrator." />
             <div className="form-group">
               <input
                 type="text"

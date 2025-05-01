@@ -5,6 +5,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
+    overflow: visible; /* Change to visible to prevent scrollbars */
+    position: relative;
   }
   
   .navbar-container {
@@ -14,6 +17,38 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  /* Mobile navbar styles */
+  @media (max-width: 768px) {
+    .navbar-container {
+      padding: 0 10px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .navbar {
+      padding: 5px 0;
+    }
+    
+    .navbar-container {
+      padding: 0 5px;
+      justify-content: space-between;
+    }
+    
+    .logo {
+      margin-left: 5px;
+    }
+    
+    .header-text {
+      font-size: 14px;
+    }
+    
+    .nav-actions {
+      margin-right: 5px;
+      gap: 10px;
+    }
   }
   
   .logo {
@@ -30,6 +65,24 @@
     margin-left: 10px; /* Space between logo and text */
   }
   
+  /* Mobile logo styles */
+  @media (max-width: 768px) {
+    .logo {
+      margin-left: 5px;
+    }
+    
+    .header-text {
+      font-size: 16px;
+    }
+  }
+  
+  /* Small mobile styles */
+  @media (max-width: 480px) {
+    .header-text {
+      font-size: 14px;
+    }
+  }
+  
   .deped-logo {
   max-height: 60px;
   max-width: 120px;
@@ -41,10 +94,17 @@
   display: block;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .deped-logo {
     max-height: 40px;
     max-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .deped-logo {
+    max-height: 30px;
+    max-width: 60px;
   }
 }
   
@@ -54,11 +114,29 @@
     align-items: center;
     margin-left: auto; /* This ensures it stays on the right */
     margin-right: 30px; /* Add right margin to push icons to right corner */
+    flex-wrap: nowrap;
+  }
+  
+  /* Mobile nav actions */
+  @media (max-width: 768px) {
+    .nav-actions {
+      gap: 10px;
+      margin-right: 10px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .nav-actions {
+      gap: 15px;
+      margin-right: 5px;
+      justify-content: center;
+    }
   }
   
   .notification-container,
   .profile-container {
     position: relative;
+    z-index: 1001; /* Ensure dropdowns appear above other elements */
   }
   
   .icon-button {
@@ -83,6 +161,14 @@
     color: white;
   }
   
+  /* Mobile icon size */
+  @media (max-width: 768px) {
+    .icon {
+      width: 25px;
+      height: 25px;
+    }
+  }
+  
   .dropdown {
     position: absolute;
     right: 0;
@@ -93,6 +179,22 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     min-width: 250px;
     z-index: 1000;
+    max-width: 90vw;
+  }
+  
+  /* Mobile dropdown */
+  @media (max-width: 480px) {
+    .dropdown {
+      min-width: 200px;
+      right: -10px; /* Adjust position to prevent overflow */
+    }
+    
+    /* Ensure profile dropdown stays visible */
+    .profile-container .dropdown {
+      right: 0;
+      max-width: 90vw;
+      position: absolute;
+    }
   }
   
   .notifications-dropdown h3,

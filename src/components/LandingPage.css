@@ -42,6 +42,38 @@
     align-items: center;
   }
   
+  @media (max-width: 768px) {
+    .nav-links {
+      gap: 15px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .nav-links {
+      gap: 10px;
+    }
+    
+    .nav-links a {
+      font-size: 14px;
+    }
+    
+    .signup-button {
+      padding: 8px 15px;
+    }
+    
+    header {
+      padding: 15px 0;
+    }
+    
+    .logo-doe {
+      font-size: 20px;
+    }
+    
+    .logo-text {
+      font-size: 16px;
+    }
+  }
+  
   .nav-links a {
     text-decoration: none;
     color: #333;
@@ -82,7 +114,27 @@
     object-fit: contain;
 }
 
-  
+@media (max-width: 992px) {
+    .hero-image img {
+        width: 300px;
+        height: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-image img {
+        width: 250px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-image img {
+        width: 200px;
+        height: 250px;
+    }
+}
+
   .hero .container {
     display: flex;
     align-items: center;
@@ -90,10 +142,52 @@
     gap: 40px;
   }
   
+  /* Responsive hero section */
+  @media (max-width: 992px) {
+    .hero .container {
+      gap: 20px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hero .container {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .hero-content {
+      order: 1;
+      margin: 0 auto;
+    }
+    
+    .hero-image {
+      order: 0;
+      margin-bottom: 30px;
+    }
+  }
+  
   .hero h1 {
     font-size: 42px;
     margin-bottom: 20px;
     color: #1e3a8a;
+  }
+  
+  @media (max-width: 992px) {
+    .hero h1 {
+      font-size: 36px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hero h1 {
+      font-size: 32px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .hero h1 {
+      font-size: 28px;
+    }
   }
   
   .hero p {
@@ -173,6 +267,30 @@
     display: flex;
     justify-content: space-between;
     gap: 20px;
+  }
+  
+  @media (max-width: 992px) {
+    .process-steps {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .process-step {
+      flex-basis: calc(50% - 20px);
+      margin-bottom: 30px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .process-steps {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .process-step {
+      flex-basis: 100%;
+      max-width: 400px;
+    }
   }
   
   .process-step {
@@ -329,9 +447,23 @@
       flex-direction: column;
       gap: 30px;
     }
-  
+    
+    /* Make the navigation responsive instead of hiding it */
+    header nav {
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+    
     .nav-links {
-      display: none;
+      display: flex;
+      justify-content: center;
+    }
+    
+    /* Prevent signup button from stretching */
+    .signup-button {
+      display: inline-block;
+      width: auto;
     }
   }
   

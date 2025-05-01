@@ -134,12 +134,22 @@
     cursor: not-allowed;
   }
   
+
+  
+  /* Admin note container and styling */
+  .admin-note-container {
+    width: 100%;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
   .admin-note {
     background-color: #e7f3fe;
     border-left: 4px solid #ff0000;
     padding: 12px 15px;
-    margin-bottom: 20px;
     border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .admin-note p {
@@ -148,7 +158,28 @@
     font-size: 14px;
     font-weight: 500;
   }
-
+  
+  /* Responsive styles for admin-note */
+  @media (max-width: 768px) {
+    .admin-note-container {
+      margin-bottom: 15px;
+    }
+    
+    .admin-note {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .admin-note {
+      padding: 10px;
+    }
+    
+    .admin-note p {
+      font-size: 12px;
+    }
+  }
+  
   /* Confirmation Dialog Styles */
   .confirmation-overlay {
     position: fixed;

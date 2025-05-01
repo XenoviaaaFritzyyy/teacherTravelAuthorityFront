@@ -24,6 +24,8 @@
   margin-left: 15px;
 }
 
+
+
 .deped-logo {
   height: 100px;
   width: 200px;
@@ -36,6 +38,8 @@
   margin-left: auto;
   margin-right: 20px;
 }
+
+
 
 .icon-button {
   background: none;
@@ -78,6 +82,57 @@
   max-width: 1200px;
   margin: 20px auto;
   padding: 0 20px;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 480px) {
+  .search-filter-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .search-container, .filter-container {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .search-container input, .filter-container select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .filter-container {
+    flex-wrap: wrap;
+  }
+  
+  .filter-container label {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  /* Ensure the department dropdown is fully visible */
+  .filter-container select {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  /* Fix the logout button positioning */
+  .logout-button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  
+  /* Add some spacing between elements */
+  .admin-container {
+    padding: 0 10px;
+  }
+  
+  /* Make sure the check expired codes button fits */
+  .check-expired-button {
+    width: 100%;
+    margin-top: 10px;
+    text-align: center;
+  }
 }
 
 .search-filter-container {
@@ -176,16 +231,27 @@
   align-items: center;
   gap: 20px;
   padding: 10px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
+
+
 
 .teacher-name {
   font-weight: bold;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .department-info {
   text-align: center;
   color: #666;
   font-style: italic;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .order-status-container {
@@ -193,6 +259,9 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 5px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .order-date {
@@ -572,6 +641,8 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+
+
 .summary-card {
   flex: 1;
   padding: 1.5rem;
@@ -747,4 +818,34 @@
   color: #333;
   margin-bottom: 4px;
   font-size: 14px;
+}
+
+/* Mobile order item styles */
+@media (max-width: 480px) {
+  .order-header {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .department-info {
+    text-align: left;
+    grid-row: 2;
+  }
+  
+  .order-status-container {
+    align-items: flex-start;
+    grid-row: 3;
+  }
+  
+  .order-date {
+    text-align: left;
+  }
+  
+  .orders-container {
+    padding: 10px;
+  }
+  
+  .order-item {
+    padding: 10px;
+  }
 }
